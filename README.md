@@ -37,29 +37,24 @@ JIRA/Linear/GitHub Issues/Confluence/Notion, etc.), and drive the browser via a 
 MCP (Playwright / Chrome DevTools). If none is connected, the agents fall back to local `.md` files
 and tell you — the workflow still runs.
 
-## Local installation
+## Installation
 
-**Quick load (per session, for testing):**
-
-```bash
-claude --plugin-dir ~/claude-plugins/tiki-taka-workflow/plugins/tiki-taka
-```
-
-**Permanent install (via marketplace):** `.claude-plugin/plugin.json` here is the plugin manifest;
-the `marketplace.json` that lists this plugin lives at the repo root (`.claude-plugin/marketplace.json`).
-For a permanent install, register the marketplace folder, then install:
+**Install from Bitbucket (recommended):** register the repo as a marketplace by its Git URL, then
+install. The marketplace name is `tiki-taka-workflow` (the `name` in `.claude-plugin/marketplace.json`).
 
 ```bash
-claude plugin marketplace add ~/claude-plugins/tiki-taka-workflow
+claude plugin marketplace add git@bitbucket.org:tunaiku/tiki-taka-workflow.git
 claude plugin install tiki-taka@tiki-taka-workflow
 ```
 
-**Validate the manifest:**
+SSH URL needs your Bitbucket SSH key set up; HTTPS works too
+(`https://bitbucket.org/tunaiku/tiki-taka-workflow.git`, prompts for an app password on a private repo).
+Pull later updates with `claude plugin marketplace update tiki-taka-workflow`.
 
-```bash
-claude plugin validate ~/claude-plugins/tiki-taka-workflow/plugins/tiki-taka          # ✔ passed
-claude plugin validate --strict ~/claude-plugins/tiki-taka-workflow/plugins/tiki-taka # ✔ passed
-```
+> `setup-workflow` writes `context/team-context.md` + `tool-providers.md` into the installed copy;
+> a `marketplace update` may overwrite them, so rerun `/tiki-taka:setup-workflow` after updating.
+
+After install, run `/tiki-taka:setup-workflow` to configure the plugin for your team.
 
 ## 13 Subagents
 
