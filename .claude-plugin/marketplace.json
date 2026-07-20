@@ -1,0 +1,12 @@
+{
+  "name": "tiki-taka-workflow",
+  "description": "Marketplace for the tiki-taka workflow plugin — development & bug fixing workflow orchestrator (team-agnostic, configured via context/team-context.md).",
+  "owner": { "name": "Ahlul Esasjana" },
+  "plugins": [
+    {
+      "name": "tiki-taka",
+      "source": "./plugins/tiki-taka",
+      "description": "PRD-to-execute development workflow orchestrator: PRD analysis, TRD writing, task breakdown, parallel execute-review barrier, bug fixing workflow — with a complete skill set bundled (TDD, security, performance, etc.)."
+    }
+  ]
+}
