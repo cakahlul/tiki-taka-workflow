@@ -9,9 +9,14 @@ availability, and write the answers to two files. After setup, `/tiki-taka:dev-w
 `/tiki-taka:bug-workflow` read these files and pass the providers to the relevant agents, so the
 agents no longer ask the user where things go.
 
+**Bootstrap from templates first:** these two files are gitignored, so a fresh clone ships only the
+`.template.md` versions. Before writing, for each target: if it does NOT exist, copy the matching
+template — `context/team-context.template.md` → `context/team-context.md`,
+`context/tool-providers.template.md` → `context/tool-providers.md`.
+
 **Files this writes:**
-- `${CLAUDE_PLUGIN_ROOT}/context/tool-providers.md` — provider + MCP info for PRD-slices, TRD, tasks, designer (created by this command).
-- `${CLAUDE_PLUGIN_ROOT}/context/team-context.md` — project location + team assignment (existing file; fill Local Repo Roots + Squad Members).
+- `${CLAUDE_PLUGIN_ROOT}/context/tool-providers.md` — provider + MCP info for PRD-slices, TRD, tasks, designer (bootstrapped from `tool-providers.template.md` if absent, then filled by this command).
+- `${CLAUDE_PLUGIN_ROOT}/context/team-context.md` — project location + team assignment (bootstrapped from `team-context.template.md` if absent; fill Local Repo Roots + Squad Members).
 
 **To reset the plugin back to generic**: clear `tool-providers.md` and reset `team-context.md` to
 its template placeholders. No agent file is ever edited by this command, so the agents stay generic.
