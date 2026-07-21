@@ -4,6 +4,25 @@ description: Run the Development Workflow (Planning Phase → parallel execute-r
 
 # Development Workflow
 
+## Setup gate (MUST run first)
+
+Before anything else, verify setup is **complete** — not just that the files exist. Read
+`${CLAUDE_PLUGIN_ROOT}/context/tool-providers.md` and `${CLAUDE_PLUGIN_ROOT}/context/team-context.md`,
+and their templates (`tool-providers.template.md`, `team-context.template.md`).
+
+Do NOT stop at "file exists". Compare each file against its template field by field: a field is
+**answered** only if its value differs from the template placeholder (any `<...>` token, or the
+template literals like `/absolute/path/to/...`). Gate outcome:
+
+- **File absent, OR every field still placeholder** → not set up. STOP the workflow, do not call any
+  agent. Tell the user to run `/tiki-taka:setup-workflow`, then run it for them (full flow).
+- **Some fields answered, some still placeholder** → partial setup. Run `/tiki-taka:setup-workflow`
+  in **instant mode**: ask ONLY the sections whose fields are still placeholders — do not re-ask
+  answered ones. After the missing answers are written, continue this workflow.
+- **All fields answered** → proceed.
+
+This gate is non-negotiable and applies to every tiki-taka workflow command.
+
 **Before starting**, read `${CLAUDE_PLUGIN_ROOT}/context/team-context.md` for Local Repo Roots,
 Squad Members, Repository Mapping, and Feature Scope data — used by project-scout, trd-writer, and
 task-breaker as the reference for project/repo/people. Pass the Local Repo Roots to project-scout so
@@ -54,8 +73,9 @@ If there is a requirement that is odd/unreasonable in this area, you MUST ask th
    does not need the PRD analysis result, only the name of the project/feature the user mentioned. If there is a question
    from either agent, ask the user and DO NOT continue to the next stage before it is answered
    (wait for the answers to both agents before continuing, even if only one asked).
-2. After prd-analyst finishes, call the subagent `tiki-taka:prd-slicer` to break the PRD into rollout
-   phases (Phase 1: MVP, Phase 2, etc.), based on the result of #1. If there is a requirement that is ambiguous
+2. After BOTH prd-analyst and project-scout finish, call the subagent `tiki-taka:prd-slicer` to break the PRD into rollout
+   phases (Phase 1: MVP, Phase 2, etc.), based on BOTH results from #1 — the prd-analyst analysis AND the
+   project-scout project knowledge, so slicing reflects the actual technical condition, not assumptions. If there is a requirement that is ambiguous
    whether it belongs in the MVP or not, ask the user first.
 3. Call the subagent `tiki-taka:trd-writer` to create the TRD **specifically for the currently active phase** (starting from
    Phase 1/MVP), based on the results of prd-slicer and project-scout from #1-#2. Project-scout does NOT
@@ -125,12 +145,12 @@ task run its own loop separately.
    (DO NOT re-attach the full TRD/task/code unless the scope changes).
 4. The reviewer on the revision round only re-verifies the points named as issues plus a quick regression
    scan around the changes — no need to fully re-review the parts that are already CLEAN.
-5. After ALL tasks are `STATUS: CLEAN`, commit each task first (see the Commit section). Only after
-   the task is committed, for each task that originated from an issue tracker (has an issue key/id) call the same-stack
-   executor ONCE MORE with explicit confirmation `STATUS: CLEAN` + already committed —
-   the executor moves the ticket to **Done**. Mandatory order: CLEAN → commit → Done. (The executor
-   sets In Progress itself at the start of the first pass; Done only after CLEAN and commit.) Skip if the
-   task is only a local `.md` file.
+5. After ALL tasks are `STATUS: CLEAN`, commit AND push each task first (see the Commit & Push section). Only after
+   the task is committed and pushed, for each task that originated from an issue tracker (has an issue key/id) call the same-stack
+   executor ONCE MORE with explicit confirmation `STATUS: CLEAN` + already committed & pushed —
+   the executor moves the ticket to **Done**. Mandatory order: CLEAN → commit → push → Done. (The executor
+   sets In Progress itself at the start of the first pass; Done only after CLEAN, commit, and push.) Report each
+   status change to the user so they know what is done vs still in progress. Skip if the task is only a local `.md` file.
 6. **Story rollup**: after moving tickets to Done, for each parent Story of those tickets, fetch its
    child issues from the tracker. If EVERY child is Done, transition the Story to **Done** too. If any
    child is still open (including tickets outside this workflow run), leave the Story as-is. Skip for
@@ -138,11 +158,13 @@ task run its own loop separately.
    Story transition (or why it was skipped) to the user.
 7. Safety limit: 5 rounds without everything CLEAN, STOP and report to the user.
 
-### Commit
+### Commit & Push
 
 - Commit is done per task, not in bulk for many tasks at once.
 - The commit message must reference the related task/ticket (e.g. the JIRA number if any) and its phase (e.g. "Phase 1/MVP").
 - A commit is only done after that task has status CLEAN from the relevant reviewer.
+- **Push to the story branch** after committing: `git push` the task's commits to its story branch (the branch the executors created in Branch setup, named after the story ticket number). If the branch has no upstream yet, `git push -u origin <story-branch>`.
+- **After pushing, present a review summary to the user** so they can review the work: for each task pushed, describe in detail what changed and highlight the key code — the story branch name, files touched, the notable functions/components/endpoints added or changed (with `file:line` references and short code excerpts for the important parts), and anything the user should pay attention to when reviewing. This is a user-facing walkthrough — write it in full, not compressed.
 
 ### General principles
 

@@ -23,19 +23,27 @@ its template placeholders. No agent file is ever edited by this command, so the 
 
 ## Already set up? (re-run gate)
 
-Before anything else, check whether setup already ran: read `${CLAUDE_PLUGIN_ROOT}/context/tool-providers.md`.
-If it exists and holds real values (not the template placeholders), setup ran before — ask via
-`AskUserQuestion`: **Reset setup** or **Update setup**?
+Before anything else, read `${CLAUDE_PLUGIN_ROOT}/context/tool-providers.md`,
+`${CLAUDE_PLUGIN_ROOT}/context/team-context.md`, and their templates. Compare each file to its
+template **field by field**: a field is answered only if its value differs from the template
+placeholder (any `<...>` token, or template literals like `/absolute/path/to/...`). Classify:
 
-- **Reset setup** → run the full flow from the start, sections 1–8 in order (as if first-time setup).
-- **Update setup** → do NOT re-ask everything. Show the updatable sections (via `AskUserQuestion`,
-  `multiSelect: true`) so the user picks which to change:
-  PRD Slicing / TRD / Tasks / Team context / Designer / Scouting / Task grouping / Task-creation skill.
-  Ask ONLY the picked sections' questions, then rewrite only those parts of `tool-providers.md`
-  (and `team-context.md` if Team context picked). Leave unpicked sections untouched.
+- **All fields still placeholder (or file absent)** → first-time setup; skip this gate, go to section 1.
+- **Some answered, some still placeholder** → **instant mode**: skip the sections that are already
+  answered; ask ONLY the sections whose fields are still placeholders, then rewrite only those parts.
+  This is what a workflow command triggers when setup is partial. Do NOT re-ask answered sections.
+- **All fields answered** → setup already ran fully; ask via `AskUserQuestion`: **Reset setup** or
+  **Update setup**?
+  - **Reset setup** → run the full flow from the start, all sections in order (as if first-time).
+  - **Update setup** → do NOT re-ask everything. Show the updatable sections (via `AskUserQuestion`,
+    `multiSelect: true`) so the user picks which to change:
+    PRD Slicing / TRD / TRD template / Tasks / Team context / Designer / Scouting / Task grouping / Task-creation skill.
+    Ask ONLY the picked sections' questions, then rewrite only those parts of `tool-providers.md`
+    (and `team-context.md` if Team context picked). Leave unpicked sections untouched.
 
-If `tool-providers.md` is absent or still template placeholders → first-time setup; skip this gate,
-go straight to section 1.
+To map an unanswered file section back to a question: each `## Heading` in `tool-providers.md`
+corresponds to the like-named section below; Local Repo Roots / Squad Members in `team-context.md`
+correspond to the Team context section.
 
 ## How to ask
 
@@ -78,6 +86,17 @@ Record: destination + MCP tool prefix (or "none / not connected").
 Same question and same MCP-check flow as section 1 (Confluence / Other).
 
 Record: destination + MCP tool prefix (or "none / not connected").
+
+### 2b. TRD template → feeds `trd-writer`
+
+Ask: "Do you already have a TRD template?" Options: **Yes, I have one** / **No, let the system generate one**.
+- **Yes** → ask the user to provide/attach the TRD template file(s) — per stack (Backend / FE Web / Mobile)
+  if they keep separate ones, or a single template. Record its content to embed into the `## TRD Template`
+  section with Status: provided.
+- **No** → tell the user `trd-writer` will generate a sensible TRD structure itself. Record Status:
+  system-generated.
+
+Record: TRD template status (provided | system-generated) + content (or "system-generated").
 
 ### 3. Task output → feeds `task-breaker`, executors, reviewers
 
@@ -158,6 +177,11 @@ After all sections answered, write `${CLAUDE_PLUGIN_ROOT}/context/tool-providers
 - MCP/Tool: <mcp__atlassian__* | name | none (not connected)>
 - Fed to: trd-writer, task-breaker
 
+## TRD Template
+- Status: <provided (user supplied a template) | system-generated (no template; system creates one)>
+- Fed to: trd-writer
+- Templates (per stack): <paste/attach the user's TRD template per stack here, or leave blank if system-generated>
+
 ## Tasks
 - Destination: <JIRA | Other: name>
 - MCP/Tool: <mcp__atlassian__* | name | none (not connected)>
@@ -186,3 +210,12 @@ After all sections answered, write `${CLAUDE_PLUGIN_ROOT}/context/tool-providers
 Report a short summary to the user: each section's destination + whether its MCP is connected, and
 list any warnings raised. Remind them: warnings don't block — the workflow still runs, agents fall
 back to a local `.md` where a tool is missing.
+
+**Frontmatter allowlist reminder.** The agents' `context/tool-providers.md` config is read at
+runtime, but each agent's `tools:` frontmatter (in `agents/*.md`) is a FIXED allowlist — an agent
+can only call an MCP tool whose prefix is listed there. The shipped agents list Atlassian
+(`mcp__atlassian__*`), Figma (`mcp__figma__*`), and Playwright (`mcp__playwright__*`). If a section
+above was set to a tool whose MCP prefix is NOT one of those (e.g. a Linear/GitHub tracker, a Notion
+docs MCP, a different code-search MCP), WARN the user: the agent(s) fed by that section
+(`Fed to:` line) cannot call that MCP until its prefix is added to their `tools:` frontmatter —
+list which agent files need editing. This is manual; setup does not edit agent files.

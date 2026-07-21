@@ -16,11 +16,31 @@ markdown agents/skills, not only Claude.
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `/tiki-taka:setup-workflow`   | Configure the plugin for your team: asks where PRD-slices / TRD / tasks go, which MCP/tools serve them, project location + team assignment, and design-tool provider. Writes the answers so the workflow agents stop asking. |
 | `/tiki-taka:reset-workflow`   | Reset the plugin back to generic — undo `setup-workflow`. Restores `context/team-context.md` to its blank template and deletes `tool-providers.md`. No agent files are touched.                                    |
-| `/tiki-taka:dev-workflow`   | Development Workflow: Planning Phase (prd-analyst + project-scout → prd-slicer → trd-writer → task-breaker) → Execution Phase (parallel execute barrier → parallel review barrier, repeat until CLEAN) → Commit. |
-| `/tiki-taka:bug-workflow`   | Bug Fixing Workflow: project-scout (repo/stack) → bug-analyst (severity + root cause) → parallel fixing executor-review loop → commit → incident-reporter (if Critical/High).                                        |
+| `/tiki-taka:dev-workflow`   | Development Workflow: Planning Phase (prd-analyst + project-scout → prd-slicer → trd-writer → task-breaker) → Execution Phase (parallel execute barrier → parallel review barrier, repeat until CLEAN) → Commit & Push → review summary → status update. |
+| `/tiki-taka:bug-workflow`   | Bug Fixing Workflow: project-scout (repo/stack) → bug-analyst (severity + root cause) → parallel fixing executor-review loop → commit & push → review summary → status update → incident-reporter (if Critical/High).                                        |
 
 `dev-workflow` and `bug-workflow` read `context/team-context.md` (Local Repo Roots, Squad Members,
 Repository Mapping, Feature Scope) at the start.
+
+## Branch, push & status conventions
+
+Both workflows follow the same git and tracker discipline so you always know what shipped and where:
+
+- **Branch = Story ticket number.** Before touching code, each executor branches off the repo's
+  **default branch** (detected per repo — `main` or `master`). The branch is named after the parent
+  **Story** ticket (e.g. `SLS-12345`), so all tasks under one story share one branch. If the story
+  branch already exists (another task's executor created it), the executor checks it out instead of
+  recreating. No parent Story (flat grouping) or a local `.md` task → falls back to the task's own key.
+- **Push, not just commit.** After a task is `STATUS: CLEAN` and committed, its commits are **pushed**
+  to the story branch (`-u` on first push).
+- **Review summary.** After pushing, the workflow presents a detailed, user-facing walkthrough:
+  branch name, files touched, the notable functions/components/endpoints changed (with `file:line`
+  references and short code excerpts) — so you can review the work.
+- **Status updates.** Executors move the ticket to **In Progress** at the start, and to **Done**
+  after CLEAN + commit + push (mandatory order: CLEAN → commit → push → Done). When every child of a
+  parent Story is Done, the Story is transitioned to **Done** too. Each status change is reported to
+  you so it is clear what is finished vs still in progress. Skipped for local `.md` tasks or when no
+  tracker tool is connected.
 
 ## Setup — configure your team first
 

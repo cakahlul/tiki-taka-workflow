@@ -15,6 +15,11 @@
 - MCP/Tool: <mcp__atlassian__* | name | none (not connected)>
 - Fed to: trd-writer, task-breaker
 
+## TRD Template
+- Status: <provided (user supplied a template) | system-generated (no template; system creates one)>
+- Fed to: trd-writer
+- Templates (per stack): <paste/attach the user's TRD template per stack here, or leave blank if system-generated>
+
 ## Tasks
 - Destination: <JIRA | Other: name>
 - MCP/Tool: <mcp__atlassian__* | name | none (not connected)>

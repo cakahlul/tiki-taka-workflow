@@ -23,8 +23,9 @@ SKILL LOADING — read carefully, skills are expensive to load and this agent ru
 2b. **DO NOT just trust the executor's verification report** — reproduce it yourself in the browser.
     For technical reproduction (live DOM, console errors, network request/response, performance
     profiling, the accessibility tree), call the `browser-testing-with-devtools` skill first — it guides
-    using the Chrome DevTools MCP plus its security constraints. Playwright is still allowed for driving
-    interactions. Re-run the golden path and at least one edge case the executor mentioned, check
+    using the browser-driving/testing tool available (e.g. Playwright / Chrome DevTools, per the tools in
+    your frontmatter and your setup) plus its security constraints. Use whichever such tool is available to
+    drive interactions. Re-run the golden path and at least one edge case the executor mentioned, check
     console/network yourself. If the executor says it was tested but you find a bug/error while
     reproducing it again, this becomes a `NEEDS_REVISION` issue.
 3. Categorize each finding by severity: **Critical** (must fix before merge: XSS/security hole, data exposure, broken functionality), **Important** (must fix: missing tests, wrong state management, poor error handling), **Suggestion** (optional: naming, style, minor optimization).

@@ -4,6 +4,25 @@ description: Run the Bug Fixing Workflow (project-scout repo/stack → bug-analy
 
 # Bug Fixing Workflow
 
+## Setup gate (MUST run first)
+
+Before anything else, verify setup is **complete** — not just that the files exist. Read
+`${CLAUDE_PLUGIN_ROOT}/context/tool-providers.md` and `${CLAUDE_PLUGIN_ROOT}/context/team-context.md`,
+and their templates (`tool-providers.template.md`, `team-context.template.md`).
+
+Do NOT stop at "file exists". Compare each file against its template field by field: a field is
+**answered** only if its value differs from the template placeholder (any `<...>` token, or the
+template literals like `/absolute/path/to/...`). Gate outcome:
+
+- **File absent, OR every field still placeholder** → not set up. STOP the workflow, do not call any
+  agent. Tell the user to run `/tiki-taka:setup-workflow`, then run it for them (full flow).
+- **Some fields answered, some still placeholder** → partial setup. Run `/tiki-taka:setup-workflow`
+  in **instant mode**: ask ONLY the sections whose fields are still placeholders — do not re-ask
+  answered ones. After the missing answers are written, continue this workflow.
+- **All fields answered** → proceed.
+
+This gate is non-negotiable and applies to every tiki-taka workflow command.
+
 **Before starting**, read `${CLAUDE_PLUGIN_ROOT}/context/team-context.md` for Local Repo Roots,
 Squad Members, Repository Mapping, and Feature Scope data — used by project-scout as the reference for
 the affected repo/stack. Pass the Local Repo Roots to project-scout so it knows where to search. If
@@ -47,8 +66,9 @@ When there is a bug/issue report, follow this flow in order.
    - If the executor finds the `contract` from bug-analyst insufficient/ambiguous during implementation, report it
      as an issue (not silently changing it) — the reviewer flags the dependency item that deviates from the
      contract as `NEEDS_REVISION`, not the dependent item that already matches the initial contract.
-4. Commit changes per bug (per location item if multi-location), the commit message must reference the bug ticket number.
-5. If this bug's severity is Critical or High, call the subagent `tiki-taka:incident-reporter` to create an incident report. If the severity is Medium/Low, skip this step.
+4. Commit changes per bug (per location item if multi-location), the commit message must reference the bug ticket number. Then **push to the story branch** (the branch the executor created in Branch setup, named after the story/bug ticket number; `git push -u origin <story-branch>` if no upstream yet). **After pushing, present a review summary to the user**: for each fix pushed, describe in detail what changed and highlight the key code — branch name, files touched, the notable functions/lines changed (with `file:line` references and short excerpts for the important parts), and what to pay attention to when reviewing. Write this user-facing walkthrough in full, not compressed.
+5. **Status update (skip for local `.md` bugs or when no tracker tool is available).** The executor sets the ticket to **In Progress** itself at the start of its first pass. After the fix is CLEAN and committed/pushed, call the same-stack executor ONCE MORE with explicit confirmation `STATUS: CLEAN` + already committed — it moves the ticket to **Done**. Mandatory order: CLEAN → commit → push → Done. Then, if the ticket has a parent Story, fetch the Story's child issues: if EVERY child is Done, transition the Story to **Done** too; if any child is still open, leave it. Report each status change (or why skipped) to the user so they know what is done vs still in progress.
+6. If this bug's severity is Critical or High, call the subagent `tiki-taka:incident-reporter` to create an incident report. If the severity is Medium/Low, skip this step.
 
 ### Additional principles
 
