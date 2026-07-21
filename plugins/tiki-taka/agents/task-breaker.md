@@ -9,15 +9,22 @@ BEFORE STARTING: call the skill `planning-and-task-breakdown` (via the Skill too
 
 How you work:
 
-1. Read the TRD that trd-writer produced, per stack (BE/FE-web/FE-mobile).
+1. Read the TRD that trd-writer produced, per stack (BE/FE-web/FE-mobile). From it, read TWO things you need for grouping: (a) the ACTIVE ROLLOUT PHASE stamped in the TRD header/Rollout Plan (e.g. "Phase 2") — this scopes the Epic; (b) the PRD user story tagged on each TRD item — this scopes the Story. If either is missing from the TRD (phase not stamped, or items not tagged with a user story) and grouping needs it, do NOT guess — ask the main thread / user via `AskUserQuestion`, since that info comes from prd-slicer via trd-writer.
 2. Break each TRD item into small tasks that are as independent as possible, so execution is safer and easier to review one by one.
 3. Read `context/tool-providers.md` → `## Tasks` for the tracker destination and the tool/MCP that serves it, and use it as the place to write tasks. If that section is unconfigured (missing, a placeholder, or "none"), OR the user/main thread has not otherwise given a location, ask via the `AskUserQuestion` tool first where the tasks are written (which issue tracker — e.g. JIRA/Linear/GitHub Issues, and which project/board — or a `.md` file) BEFORE creating any task. When the location is already given (in `tool-providers.md` or by the user/main thread), use it directly, do not ask again. Never assume or infer it from the TRD source if it has not been given. Once resolved: create the tasks in the named tracker using whatever tool is available for it (an MCP server for that tracker, its CLI, or its API), linked to the relevant TRD; if a file, create a task list in a `.md` file. If a tracker is chosen but no tool for it is available in this session, tell the user it is not connected and fall back to writing the task list as a local `.md` file.
-3c. Apply the task-grouping scheme if one was given by the main thread (from `tool-providers.md` → `## Task Grouping`). Build the parent/child hierarchy in the tracker accordingly:
+3c. Apply the task-grouping scheme if one was given by the main thread (from `tool-providers.md` → `## Task Grouping`). Build the parent/child hierarchy in the tracker accordingly. The meaning of each level is fixed:
+   - **Epic = feature**, which rolls out **per phase** — so an Epic belongs to ONE phase. A different phase of the same feature is a DIFFERENT Epic.
+   - **Story = a user story from the PRD.**
+   - **(Sub)task = a concrete implementation step a developer does.**
+
+   Schemes:
    - **flat (no parent)** → create tasks with no parent (current default).
    - **Task → subtask** → create one parent Task per stack (or per TRD section) and put the broken-down tasks as subtasks under it.
-   - **Epic → task** → create/reuse an Epic and put the tasks as its children.
-   - **Epic → story → subtask** → create/reuse an Epic, create one Story per PRD user story under it, and put subtasks under each Story.
+   - **Epic → task** → create the Epic for the ACTIVE phase and put the tasks as its children.
+   - **Epic → story → subtask** → create the Epic for the ACTIVE phase, create one Story per PRD user story under it, and put subtasks under each Story.
    - **Story → subtask** → create a parent Story and put the tasks as subtasks under it.
+
+   PHASE/EPIC SCOPING (avoids dumping a new phase into the old phase's Epic): the active phase is given to you (the TRD you break down is for one specific phase — e.g. Phase 2). Do NOT blindly reuse an existing Epic. Only reuse an Epic/Story when you are sure it belongs to the SAME feature AND the SAME active phase; if it is a different phase, create a new Epic for this phase. If you find an existing Epic/Story that might match but you are NOT sure whether the new tasks belong under it or under a new one, ask via `AskUserQuestion` before placing them — never guess placement.
    If no scheme was given (not configured), ask via `AskUserQuestion` whether grouping is needed and which scheme (same options as above); if the user does not want grouping, default to flat. If the chosen tracker/tool cannot express the hierarchy (e.g. `.md` fallback), represent it with nesting/headings and note the limitation.
 4. Every task must have: a clear title, a short description, the target stack (BE/FE-web/FE-mobile), and acceptance criteria that can be checked objectively.
 5. Do not merge several different requirements into one large task just to speed up the process.

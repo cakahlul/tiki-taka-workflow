@@ -50,8 +50,9 @@ When there is a bug/issue report, follow this flow in order.
 1. Call the subagent `tiki-taka:project-scout` to determine the affected repo/project and stack. If the ticket already explicitly names the repo, this agent uses it directly without cross-checking again. If there is a question from this agent, ask the user and DO NOT continue before it is answered.
 2. Call the subagent `tiki-taka:bug-analyst` to read the report (from an issue tracker such as JIRA, or manual), categorize the severity (Critical/High/Medium/Low), and do a root cause analysis in the affected repo's code to determine the fix location. If there is a question from this agent, ask the user and DO NOT continue before it is answered.
 3. Run the fixing. Steps 1-2 (project-scout, bug-analyst) MUST be sequential as above — but
-   once bug-analyst finishes, the fixing phase MUST be PARALLEL, the same as the Execution Phase in the
-   Development Workflow:
+   once bug-analyst finishes, the fixing phase runs as a per-item pipeline, the same as the Execution
+   Phase in the Development Workflow — each item flows execute → review → revise on its own without
+   waiting at a shared barrier:
    - **Single-location case** (bug-analyst output is plain text, not JSON): directly call one
      executor for the relevant stack, nothing to parallelize.
    - **>1-location case** (bug-analyst outputs a JSON block `localId`/`dependsOnLocalIds`/`contract`):

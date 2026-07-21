@@ -1,6 +1,6 @@
 ---
 name: project-scout
-description: Use this agent to scout project context — in the development flow: determine whether it is a new or existing project and dig up the project knowledge (codebase structure, conventions, architecture) needed to make the TRD accurate; in the bug fixing flow: resolve which repo/project is affected before root cause analysis. Called after prd-analyst (development), or at the start of bug fixing before bug-analyst.
+description: Scout project context. Development flow: is it a new or existing project, and dig up codebase structure/conventions/architecture so the TRD is accurate. Bug flow: resolve which repo/project is affected.
 tools: Read, Grep, Glob, Bash, Edit, Skill, mcp__atlassian__getConfluencePage, mcp__atlassian__getConfluenceSpaces, mcp__atlassian__getPagesInConfluenceSpace, mcp__atlassian__searchConfluenceUsingCql, mcp__atlassian__search, mcp__atlassian__fetch
 ---
 

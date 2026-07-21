@@ -1,5 +1,5 @@
 ---
-description: Run the Development Workflow (Planning Phase → parallel execute-review barrier Execution → Commit). PRD analysis, slicing, TRD, task breakdown, then parallel execution per stack.
+description: Run the Development Workflow (Planning Phase → per-task execute-review-revise pipeline Execution → Commit). PRD analysis, slicing, TRD, task breakdown, then parallel per-task execution — each task flows through review and commit on its own without waiting at a shared barrier.
 ---
 
 # Development Workflow
@@ -87,11 +87,17 @@ If there is a requirement that is odd/unreasonable in this area, you MUST ask th
 may ask to skip the planning phase straight to execution. Confirm explicitly with the user first before
 skipping — do not skip unilaterally.
 
-### Execution Phase (PER ROUND: parallel execute barrier → parallel review barrier → repeat until CLEAN)
+### Execution Phase (PER-TASK PIPELINE: each task flows execute → review → revise on its own, no global barrier)
 
 All tasks produced by `tiki-taka:task-breaker` in the active phase MUST be executed IN PARALLEL, including tasks that
 depend on one another. DO NOT execute sequentially just because there is a dependency —
 resolve the dependency through a contract, not through a waiting order.
+
+**Pipeline, not barrier.** Each task flows through its own execute → review → revise-until-CLEAN chain
+independently. A task's reviewer is called the moment THAT task's executor finishes — it does NOT wait
+for the other tasks' executors. Task A can be CLEAN and committed while task B is still on its first
+execute pass. This is the tiki-taka principle: the ball never stops on the slowest player. Do NOT hold a
+finished task hostage to an unfinished one.
 
 **Handling dependent tasks:**
 
@@ -125,27 +131,35 @@ implements it per that same signature. Review both in parallel too; if reviewer 
 finds that A actually returns the field `amount` instead of `discount`, that becomes an issue in A to align to the
 contract — C does not need to change.
 
-Execution runs PER ROUND with two barriers: ALL executors run in parallel and must finish
-first, only then do ALL reviewers run in parallel. Repeat the execute-review round until all tasks are
-`STATUS: CLEAN`. Independent and contracted tasks alike join the same round — DO NOT let each
-task run its own loop separately.
+Kick off ALL tasks at once, then let each run its own execute → review → revise chain. Independent and
+contracted tasks alike start together — but from there each task advances at its own pace, it does NOT
+wait at a shared round boundary.
 
-1. **Execute barrier**: CALL ALL ACTIVE-TASK EXECUTORS IN ONE MESSAGE, IN PARALLEL
-   (`tiki-taka:be-executor` / `tiki-taka:fe-web-executor` / `tiki-taka:fe-mobile-executor`). Include the task, related TRD,
-   and the dependency contract (if any) IN FULL only on the FIRST PASS. At the start of the FIRST
-   PASS, if the task exists in an issue tracker (has an issue key/id) and a tool for that tracker is
-   available, the executor MUST move the ticket status to
-   **In Progress** before starting to code. WAIT FOR ALL executors to finish before continuing — do not
-   start review before the execute round is complete.
-2. **Review barrier**: after all executors finish, CALL ALL RELEVANT-STACK REVIEWERS IN ONE
-   MESSAGE, IN PARALLEL (`tiki-taka:be-reviewer` / `tiki-taka:fe-web-reviewer` / `tiki-taka:fe-mobile-reviewer`). Wait for all reviewers to finish.
-3. Collect the review results. A `STATUS: CLEAN` task drops out of the next round. A
-   `STATUS: NEEDS_REVISION` task enters the next round — go back to step 1, but call the executor
-   ONLY for the task that is still NEEDS_REVISION, sending ONLY the specific list of issues from the reviewer
-   (DO NOT re-attach the full TRD/task/code unless the scope changes).
-4. The reviewer on the revision round only re-verifies the points named as issues plus a quick regression
+1. **Kick off — all executors in one message, in parallel**: CALL ALL ACTIVE-TASK EXECUTORS IN ONE
+   MESSAGE (`tiki-taka:be-executor` / `tiki-taka:fe-web-executor` / `tiki-taka:fe-mobile-executor`). Include the task,
+   related TRD, and the dependency contract (if any) IN FULL. At the start, if the task exists in an issue
+   tracker (has an issue key/id) and a tool for that tracker is available, the executor MUST move the ticket
+   status to **In Progress** before starting to code. Do NOT wait for all executors here — proceed to
+   review each task the moment ITS executor returns.
+2. **Review as each executor finishes** — the instant a task's executor returns, call THAT task's
+   stack reviewer (`tiki-taka:be-reviewer` / `tiki-taka:fe-web-reviewer` / `tiki-taka:fe-mobile-reviewer`). Do not
+   wait for the other tasks' executors. Multiple tasks that happen to finish together may have their
+   reviewers called in one parallel message, but never delay a finished task to batch it with a slower one.
+3. **Revise per task, in place**: if a task's reviewer returns `STATUS: NEEDS_REVISION`, immediately
+   loop THAT task back through its own executor — sending ONLY the specific list of issues from the reviewer
+   (DO NOT re-attach the full TRD/task/code unless the scope changes) — then its reviewer again, until
+   `STATUS: CLEAN`. Each task's revise loop is independent; a task's NEEDS_REVISION does not stall any
+   other task. A `STATUS: CLEAN` task proceeds straight to commit (step 5) without waiting for its peers.
+4. The reviewer on a revision pass only re-verifies the points named as issues plus a quick regression
    scan around the changes — no need to fully re-review the parts that are already CLEAN.
-5. After ALL tasks are `STATUS: CLEAN`, commit AND push each task first (see the Commit & Push section). Only after
+   **Contract deviation across tasks**: if a task's reviewer finds that this task's dependency (task A)
+   implemented a function/module/schema DIFFERENT from the agreed contract, flag it as an issue in task A
+   (`STATUS: NEEDS_REVISION`) — not in the dependent task, which is correct per the promised contract. If a
+   dependency task was ALREADY marked CLEAN when its contract deviation surfaces, reopen it: loop it back
+   through its executor with the deviation as the issue, and re-review any already-CLEAN dependents whose
+   correctness rested on the original contract.
+5. As soon as a task is `STATUS: CLEAN`, commit AND push it (see the Commit & Push section). Do not wait
+   for the other tasks to be CLEAN. Only after
    the task is committed and pushed, for each task that originated from an issue tracker (has an issue key/id) call the same-stack
    executor ONCE MORE with explicit confirmation `STATUS: CLEAN` + already committed & pushed —
    the executor moves the ticket to **Done**. Mandatory order: CLEAN → commit → push → Done. (The executor
@@ -156,7 +170,9 @@ task run its own loop separately.
    child is still open (including tickets outside this workflow run), leave the Story as-is. Skip for
    tickets with no parent Story, local `.md` tasks, or when no tracker tool is available. Report each
    Story transition (or why it was skipped) to the user.
-7. Safety limit: 5 rounds without everything CLEAN, STOP and report to the user.
+7. Safety limit: per task, 5 execute→review iterations without reaching CLEAN → STOP that task and
+   report it to the user. One stuck task does not block the others — the rest of the pipeline keeps
+   running; report the stuck task alongside whatever else has already gone CLEAN and committed.
 
 ### Commit & Push
 
