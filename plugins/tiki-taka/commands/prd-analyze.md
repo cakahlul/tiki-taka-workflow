@@ -6,6 +6,11 @@ description: Analyze a PRD and scout the project in parallel, then produce an an
 
 ## Setup gate (MUST run first)
 
+**Fast path:** read the first line of `${CLAUDE_PLUGIN_ROOT}/context/tool-providers.md`. If it is
+`<!-- SETUP: complete -->`, setup is done — skip the field-by-field template diff below and proceed.
+The marker is written by `/tiki-taka:setup-workflow` only when every field in both context files is
+filled, so its presence is authoritative. Fall through to the full check only when the marker is absent.
+
 Before anything else, verify setup is **complete** — not just that the files exist. Read
 `${CLAUDE_PLUGIN_ROOT}/context/tool-providers.md` and `${CLAUDE_PLUGIN_ROOT}/context/team-context.md`,
 and their templates (`tool-providers.template.md`, `team-context.template.md`).

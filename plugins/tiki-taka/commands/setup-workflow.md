@@ -158,10 +158,20 @@ Record: task-creation skill name (or "none").
 
 ## Write `tool-providers.md`
 
+**Completion marker.** The first line of `tool-providers.md` is `<!-- SETUP: complete -->` — but write
+it ONLY when setup is fully done: every field in BOTH `tool-providers.md` and `team-context.md` is
+answered (no `<...>` placeholders left in either file). The workflow commands' setup gate reads this
+marker as a fast path to skip the field-by-field template diff. So:
+- **Full first-time setup finishing with all sections answered** → write the marker.
+- **Instant mode / partial** → if any field in either file is still a placeholder after this run, do NOT
+  write the marker (or remove it if present). Add it only once the last placeholder is filled.
+- **Reset** → the marker is cleared along with the file (see `/tiki-taka:reset-workflow`).
+
 After all sections answered, write `${CLAUDE_PLUGIN_ROOT}/context/tool-providers.md` in this shape
 (fill real values; keep the headings — the workflow commands key off them):
 
 ```markdown
+<!-- SETUP: complete -->
 # Tool Providers
 
 > Written by `/tiki-taka:setup-workflow`. To reset the plugin to generic, clear this file back to

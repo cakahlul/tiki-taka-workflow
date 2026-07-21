@@ -6,6 +6,12 @@ description: Run the Development Workflow (Planning Phase → per-task execute-r
 
 ## Setup gate (MUST run first)
 
+**Fast path:** read the first line of `${CLAUDE_PLUGIN_ROOT}/context/tool-providers.md`. If it is
+`<!-- SETUP: complete -->`, setup is done — skip the field-by-field template diff below and proceed
+straight to the "Before starting" read. This marker is written by `/tiki-taka:setup-workflow` only when
+every field in both context files is filled, so its presence is authoritative. Only fall through to the
+full check below when the marker is absent.
+
 Before anything else, verify setup is **complete** — not just that the files exist. Read
 `${CLAUDE_PLUGIN_ROOT}/context/tool-providers.md` and `${CLAUDE_PLUGIN_ROOT}/context/team-context.md`,
 and their templates (`tool-providers.template.md`, `team-context.template.md`).
@@ -187,6 +193,22 @@ wait at a shared round boundary.
 - All subagents (executor & reviewer) think on par with a senior software engineer: effective, efficient, and considering scalability.
 - The reviewer must not merely approve — it must test the logic, security, and architecture critically.
 - Do not assume anything not explicit in the PRD/TRD/task, including which requirement belongs in the MVP. If ambiguous, ask the user.
-- For small/mechanical tasks (fix a typo, copy text, trivial config, rename), the executor and reviewer
-  may be run with a lighter model (haiku) if that stack is marked as such by the
-  user — the default remains sonnet for tasks that need architecture/security reasoning.
+### Model & effort tiering (match the horse to the course — don't burn Opus reasoning on mechanical work)
+
+Spawn each agent at the tier its job needs, not one-size-fits-all. Reasoning tokens (thinking) are
+output-priced, so over-powering a mechanical agent is the quietest way to waste tokens. Defaults:
+
+| Agent / pass | Model | Effort | Why |
+|---|---|---|---|
+| prd-analyst, trd-writer | Opus | high | Architecture + requirement reasoning — the hard thinking |
+| project-scout | Sonnet | medium | Search/map the repo — mechanical, not deep design |
+| prd-slicer, task-breaker | Sonnet | medium | Structural splitting from inputs already reasoned upstream |
+| executor — first pass, non-trivial | Opus/Sonnet | high | Real implementation + design decisions |
+| executor — trivial task (typo, copy, config, rename) | Haiku | low | Auto-detect from task size; do NOT wait for the user to tag the stack |
+| executor — revision pass | (same as first) | medium | Fixing a named list of issues, not re-architecting |
+| reviewer — first pass | Sonnet | high | Critical review needs care, but not Opus-tier planning |
+| reviewer — revision pass | Sonnet | low/medium | Re-verify only the flagged issues + a quick regression scan — framework already held |
+
+These are defaults, not handcuffs: bump a tier when a "trivial" task turns out to touch security, money,
+concurrency, or a load-bearing interface. When unsure whether a task is trivial, treat it as non-trivial.
+If the user marks a whole stack as lighter/heavier, honor that over the table.

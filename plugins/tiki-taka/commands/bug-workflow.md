@@ -6,6 +6,11 @@ description: Run the Bug Fixing Workflow (project-scout repo/stack → bug-analy
 
 ## Setup gate (MUST run first)
 
+**Fast path:** read the first line of `${CLAUDE_PLUGIN_ROOT}/context/tool-providers.md`. If it is
+`<!-- SETUP: complete -->`, setup is done — skip the field-by-field template diff below and proceed.
+The marker is written by `/tiki-taka:setup-workflow` only when every field in both context files is
+filled, so its presence is authoritative. Fall through to the full check only when the marker is absent.
+
 Before anything else, verify setup is **complete** — not just that the files exist. Read
 `${CLAUDE_PLUGIN_ROOT}/context/tool-providers.md` and `${CLAUDE_PLUGIN_ROOT}/context/team-context.md`,
 and their templates (`tool-providers.template.md`, `team-context.template.md`).
@@ -74,3 +79,8 @@ When there is a bug/issue report, follow this flow in order.
 ### Additional principles
 
 - Severity determines urgency, but does not change the review standard — the reviewer stays critical even if the bug is Critical and feels urgent.
+- **Model & effort tiering** (same principle as the Development Workflow — don't burn Opus reasoning on mechanical work):
+  bug-analyst runs Opus/high (root-cause reasoning is the hard part); project-scout Sonnet/medium (repo search);
+  executor first pass Opus/Sonnet high, revision pass medium; reviewer first pass Sonnet/high, revision pass Sonnet/low-medium
+  (re-verify only the flagged issues). A one-line typo/config fix executor may run Haiku/low — auto-detect from fix size, don't
+  wait for the user to tag it. Bump a tier when the fix touches security, money, concurrency, or a load-bearing interface.

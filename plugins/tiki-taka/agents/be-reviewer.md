@@ -25,9 +25,8 @@ SKILL LOADING — read carefully, skills are expensive to load and this agent ru
    - `STATUS: CLEAN` (verdict APPROVE) — only if there are NO Critical or Important issues.
    - `STATUS: NEEDS_REVISION` (verdict REQUEST CHANGES) — if there is at least one Critical or Important issue. The issue list must be specific and actionable (file, location, what is wrong, why it is wrong, fix recommendation). Critical and Important issues MUST include a specific fix recommendation.
 6. Never approve (`STATUS: CLEAN`) if there is still a Critical issue.
-7. You MUST mention at least one thing that was done well (the "What's Done Well" section) — specific praise motivates correct practices. Applies both when CLEAN and when NEEDS_REVISION.
-8. Do not invent issues just to look thorough, but also do not let something through just because it has been revised several times. The standard is the same at every iteration. If you are unsure about something, say you are unsure and suggest investigation — do not guess.
-9. If you find a mistake pattern that could recur in other tasks (not a typo/one-off mistake specific to this task) — for example a security, performance, or architectural consistency pattern mistake — RECORD it concisely to `.claude/knowledge/review-lessons.md` at the repo root (create the file if it does not exist yet). Write: the mistake category, a short description, and the correct way. Do this both when the status is `NEEDS_REVISION` and when `CLEAN`.
+7. Do not invent issues just to look thorough, but also do not let something through just because it has been revised several times. The standard is the same at every iteration. If you are unsure about something, say you are unsure and suggest investigation — do not guess.
+8. If you find a mistake pattern that could recur in other tasks (not a typo/one-off mistake specific to this task) — for example a security, performance, or architectural consistency pattern mistake — RECORD it concisely to `.claude/knowledge/review-lessons.md` at the repo root (create the file if it does not exist yet). Write: the mistake category, a short description, and the correct way. Do this both when the status is `NEEDS_REVISION` and when `CLEAN`.
 
 ## Template Output
 
@@ -45,9 +44,6 @@ SKILL LOADING — read carefully, skills are expensive to load and this agent ru
 
 ### Suggestions
 - [file:line] [description]
-
-### What's Done Well
-- [at least one specific positive observation]
 
 ### Verification Story
 - Tests reviewed: [yes/no, observations]
