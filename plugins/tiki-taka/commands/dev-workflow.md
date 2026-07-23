@@ -38,11 +38,17 @@ it knows where to search for the repo. If that file still contains the template 
 Also read `${CLAUDE_PLUGIN_ROOT}/context/tool-providers.md` (written by `/tiki-taka:setup-workflow`)
 if it exists, for where each artifact goes + which MCP/tool serves it. When present, pass the
 provider to the relevant agents so they DO NOT ask the user where to put things:
-- **PRD Slicing** provider → `prd-analyst`, `prd-slicer`
-- **TRD** provider → `trd-writer`, `task-breaker`
+- **PRD Slicing** provider → `prd-analyst` (as PRD *source*), `technical-writer` (as the Analysis & Rollout Plan *destination*)
+- **TRD** provider → `technical-writer` (TRD *destination*); `task-breaker` links tasks to the published TRD
 - **Tasks** provider → `task-breaker`, executors, reviewers
 - **Task Grouping** scheme → `task-breaker`
-- **Designer** provider → `fe-web-executor`, `fe-web-reviewer`, `fe-mobile-executor`, `fe-mobile-reviewer`
+- **Designer** provider → `prd-analyst`, `trd-writer`, `fe-web-executor`, `fe-web-reviewer`, `fe-mobile-executor`, `fe-mobile-reviewer`
+
+**Planning docs flow through scratch, not straight to the destination.** Planning agents (`prd-analyst`,
+`project-scout`, `prd-slicer`, `trd-writer`) write local working files under `.tiki-taka/scratch/`
+instead of publishing. `technical-writer` is the SINGLE publisher — assembles scratch into finished docs
+in one container per feature, and is the only agent that knows the destination tool (keeping the others
+tool-agnostic). Pass it the **PRD Slicing** and **TRD** providers so it knows where to publish.
 
 If a provider's MCP/tool is marked "none (not connected)", still pass the destination but tell the
 agent to fall back to a local `.md`. If `tool-providers.md` is absent or still holds only template
@@ -87,11 +93,27 @@ If there is a requirement that is odd/unreasonable in this area, you MUST ask th
    Phase 1/MVP), based on the results of prd-slicer and project-scout from #1-#2. Project-scout does NOT
    need to be called again at this point — the result from #1 is sufficient unless there has been a significant change in project
    scope since then.
-4. Call the subagent `tiki-taka:task-breaker` to break the active-phase TRD into small tasks.
+4. **Publish TRDs — `technical-writer` Stage A.** After `trd-writer`, call `tiki-taka:technical-writer`
+   in `assemble` mode **Stage A**: it creates the feature's container and publishes each
+   `.tiki-taka/scratch/trd-<stack>.md`, returning each TRD's published LOCATION. Do this BEFORE
+   task-breaker so tasks can link to the TRD and write their task list back into it.
+5. Call `tiki-taka:task-breaker` to break the active-phase TRD (from `.tiki-taka/scratch/`) into tasks.
+   Pass it the published TRD locations from step 4. It asks which board/project every run — relay that.
+6. **Publish Analysis & Rollout Plan — `technical-writer` Stage B.** After task-breaker, call
+   `tiki-taka:technical-writer` in `assemble` mode **Stage B**: assembles `prd-analysis.md`,
+   `project-context.md`, `qa-log.md`, `rollout-plan.md` into one "Analysis & Rollout Plan" in the SAME
+   container, verifies all publishes, then deletes scratch. On failure it keeps scratch and reports where
+   — surface that to the user.
 
-**Skip note**: for a very small task (1 file, minor fix, no ambiguous requirement), the user
-may ask to skip the planning phase straight to execution. Confirm explicitly with the user first before
-skipping — do not skip unilaterally.
+**Q&A LOG (main thread's job, throughout Planning).** You alone see every `AskUserQuestion` answered
+across all Planning agents. Maintain `.tiki-taka/scratch/qa-log.md`: each time any is answered (or you
+ask one), append a VERBATIM row `# | Asked by | Category | Question | User answer`. Category =
+`substantive` (requirements/scope/flow/design/slicing/board) or `operational` (e.g. PRD/tracker
+location). Record EVERY question, both categories. technical-writer publishes this as section 3 in Stage B.
+
+**Skip note**: for a very small task (1 file, minor fix, no ambiguous requirement), the user may ask to
+skip planning straight to execution. Confirm explicitly first — do not skip unilaterally. If planning is
+skipped there is no scratch, so `technical-writer`'s `assemble` mode is skipped too.
 
 ### Execution Phase (PER-TASK PIPELINE: each task flows execute → review → revise on its own, no global barrier)
 
@@ -176,7 +198,15 @@ wait at a shared round boundary.
    child is still open (including tickets outside this workflow run), leave the Story as-is. Skip for
    tickets with no parent Story, local `.md` tasks, or when no tracker tool is available. Report each
    Story transition (or why it was skipped) to the user.
-7. Safety limit: per task, 5 execute→review iterations without reaching CLEAN → STOP that task and
+7. **Phase status (via technical-writer).** The rollout plan tracks each phase (NOT STARTED / IN PROGRESS
+   / DONE). You DECIDE the transition; technical-writer APPLIES it (only it touches the published doc).
+   One phase at a time → at most twice per phase, cheap.
+   - **On kicking off the active phase's tasks (step 1)**: if not already `IN PROGRESS`, call
+     `tiki-taka:technical-writer` in `set-phase-status` mode with feature, phase, `IN PROGRESS`.
+   - **After the phase rollup shows EVERY active-phase task is CLEAN + committed + pushed**: call it with
+     feature, phase, `DONE`.
+   Report each change. Skip only if there's no published rollout plan (planning skipped).
+8. Safety limit: per task, 5 execute→review iterations without reaching CLEAN → STOP that task and
    report it to the user. One stuck task does not block the others — the rest of the pipeline keeps
    running; report the stuck task alongside whatever else has already gone CLEAN and committed.
 
@@ -193,6 +223,7 @@ wait at a shared round boundary.
 - All subagents (executor & reviewer) think on par with a senior software engineer: effective, efficient, and considering scalability.
 - The reviewer must not merely approve — it must test the logic, security, and architecture critically.
 - Do not assume anything not explicit in the PRD/TRD/task, including which requirement belongs in the MVP. If ambiguous, ask the user.
+- **Communication contract.** `Read` `context/comms-style.md` and follow it for how you dispatch subagents and relay results: machine-to-machine (dispatch prompts + agent notes) is caveman; user-facing (questions + the post-push walkthrough) is full prose.
 ### Model & effort tiering (match the horse to the course — don't burn Opus reasoning on mechanical work)
 
 Spawn each agent at the tier its job needs, not one-size-fits-all. Reasoning tokens (thinking) are
@@ -203,6 +234,7 @@ output-priced, so over-powering a mechanical agent is the quietest way to waste 
 | prd-analyst, trd-writer | Opus | high | Architecture + requirement reasoning — the hard thinking |
 | project-scout | Sonnet | medium | Search/map the repo — mechanical, not deep design |
 | prd-slicer, task-breaker | Sonnet | medium | Structural splitting from inputs already reasoned upstream |
+| technical-writer | Sonnet | low/medium | Assemble/publish scratch into docs + flip a phase status field — mechanical, no design reasoning |
 | executor — first pass, non-trivial | Opus/Sonnet | high | Real implementation + design decisions |
 | executor — trivial task (typo, copy, config, rename) | Haiku | low | Auto-detect from task size; do NOT wait for the user to tag the stack |
 | executor — revision pass | (same as first) | medium | Fixing a named list of issues, not re-architecting |

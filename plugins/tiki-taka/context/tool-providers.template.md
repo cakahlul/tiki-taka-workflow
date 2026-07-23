@@ -28,7 +28,7 @@
 ## Designer
 - Tool: <Figma | Other: name>
 - MCP/Tool: <mcp__figma__* | name | none (not connected)>
-- Fed to: fe-web-executor, fe-web-reviewer, fe-mobile-executor, fe-mobile-reviewer
+- Fed to: prd-analyst, trd-writer, fe-web-executor, fe-web-reviewer, fe-mobile-executor, fe-mobile-reviewer
 
 ## Task Grouping
 - Scheme: <flat (no parent) | Task → subtask | Epic → task | Epic → story → subtask | Story → subtask>

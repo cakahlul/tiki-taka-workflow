@@ -118,7 +118,7 @@ Write the repo paths into the **Local Repo Roots** section and members into the 
 section of `team-context.md`. Do not invent Feature Scope / Repository Mapping — only fill what the
 user gave; leave the rest for them to edit if they want.
 
-### 5. Designer tool provider → feeds `fe-web-executor`, `fe-web-reviewer`, `fe-mobile-executor`, `fe-mobile-reviewer`
+### 5. Designer tool provider → feeds `prd-analyst`, `trd-writer`, `fe-web-executor`, `fe-web-reviewer`, `fe-mobile-executor`, `fe-mobile-reviewer`
 
 Ask: "Which design tool do you use?" Options: **Figma** / **Other**.
 - **Figma** → check MCP `figma` (or similar). Warn if missing.
@@ -200,7 +200,7 @@ After all sections answered, write `${CLAUDE_PLUGIN_ROOT}/context/tool-providers
 ## Designer
 - Tool: <Figma | Other: name>
 - MCP/Tool: <mcp__figma__* | name | none (not connected)>
-- Fed to: fe-web-executor, fe-web-reviewer, fe-mobile-executor, fe-mobile-reviewer
+- Fed to: prd-analyst, trd-writer, fe-web-executor, fe-web-reviewer, fe-mobile-executor, fe-mobile-reviewer
 
 ## Scouting
 - Tool/MCP: <name + mcp prefix | none>
@@ -224,7 +224,7 @@ back to a local `.md` where a tool is missing.
 **Frontmatter allowlist reminder.** The agents' `context/tool-providers.md` config is read at
 runtime, but each agent's `tools:` frontmatter (in `agents/*.md`) is a FIXED allowlist — an agent
 can only call an MCP tool whose prefix is listed there. The shipped agents list Atlassian
-(`mcp__atlassian__*`), Figma (`mcp__figma__*`), and Playwright (`mcp__playwright__*`). If a section
+(`mcp__atlassian__*`) and Figma (`mcp__figma__*`). If a section
 above was set to a tool whose MCP prefix is NOT one of those (e.g. a Linear/GitHub tracker, a Notion
 docs MCP, a different code-search MCP), WARN the user: the agent(s) fed by that section
 (`Fed to:` line) cannot call that MCP until its prefix is added to their `tools:` frontmatter —

@@ -67,9 +67,8 @@ plugin is hardcoded to a specific team. Undo with `/tiki-taka:reset-workflow`.
 
 Optional integrations: agents can read/write PRDs, TRDs, tasks, and incident reports through
 whatever issue-tracker or wiki tool is connected in your session (an MCP server, CLI, or API for
-JIRA/Linear/GitHub Issues/Confluence/Notion, etc.), and drive the browser via a browser-automation
-MCP (Playwright / Chrome DevTools). If none is connected, the agents fall back to local `.md` files
-and tell you — the workflow still runs.
+JIRA/Linear/GitHub Issues/Confluence/Notion, etc.). If none is connected, the agents fall back to
+local `.md` files and tell you — the workflow still runs.
 
 ## Installation
 
@@ -97,7 +96,7 @@ After install, run `/tiki-taka:setup-workflow` to configure the plugin for your 
 fe-mobile-reviewer
 **Bug:** bug-analyst, incident-reporter (repo/stack resolution reuses project-scout)
 
-## Bundled skills (17)
+## Bundled skills (16)
 
 Self-contained — every skill referenced by an agent is bundled along, no need to install another plugin:
 
@@ -105,7 +104,7 @@ Self-contained — every skill referenced by an agent is bundled along, no need 
 `incremental-implementation`, `debugging-and-error-recovery`, `api-and-interface-design`,
 `source-driven-development`, `code-review-and-quality`, `code-simplification`,
 `security-and-hardening`, `performance-optimization`, `planning-and-task-breakdown`,
-`spec-driven-development`, `interview-me`, `idea-refine`, `browser-testing-with-devtools`,
+`spec-driven-development`, `interview-me`, `idea-refine`,
 `frontend-ui-engineering`, `doubt-driven-development`.
 
 ## Notes
