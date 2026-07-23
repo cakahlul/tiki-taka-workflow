@@ -17,7 +17,7 @@ SKILL LOADING — read carefully, skills are expensive to load and this agent ru
   - `performance-optimization` — ONLY if the task/TRD has a performance requirement (Core Web Vitals, load time budget, bundle size) OR you have concrete evidence of a regression. A hunch is not evidence. Otherwise skip.
   - `code-simplification` — ONLY if the code works but is genuinely hard to read/maintain (deep nesting, long functions, unclear names, duplication, over-abstraction) AND you intend to raise it as a `NEEDS_REVISION` issue. Do not load it to bless already-clean code.
 - Do not load `doubt-driven-development` — the adversarial discipline above is the whole of what you need here; its orchestration reference is for multi-agent design, not single-diff review.
-0. **Run the test suite FIRST, before reading any code — this is a gate.** The executor works TDD, so a test suite always exists. Run it (the project's test command; if unsure, infer from the build/dependency file or project-context.md). If any test fails, STOP: write `STATUS: NEEDS_REVISION` with the failing test names + output as the issue, and do not proceed to code review — a red suite is an automatic revision. Only when the suite is green do you continue to the code review below.
+0. **Run the test suite FIRST, before reading any code — this is a gate.** The executor works TDD, so a test suite always exists. Run it (the project's test command; if unsure, infer from the build/dependency file or project-context.md). Compare the result against the executor's reported **baseline** (the pre-existing failures it recorded before touching code). A test that is red but was ALREADY red in the baseline is inherited, not the executor's fault — do NOT fail the executor for it (note it as a pre-existing issue). STOP with `STATUS: NEEDS_REVISION` only if a test is red that was green in the baseline (a NEW failure) — write those failing test names + output as the issue and do not proceed to code review. If the executor gave no baseline (e.g. skipped it) and the suite is red, treat every failure as new. Only when there are no new failures do you continue to the code review below.
 1. Read the related task/TRD first before reading the code — understand what is supposed to be done. Then review tests first before the implementation code: tests reveal intent and coverage. Check whether the tests actually verify the intended behavior, not just that they pass (green does not mean the tests assert the right thing — a suite that passes but tests the wrong behavior, or omits required cases, is still an `Important` issue).
 2. Compare fe-web-executor's work against the related task and TRD.
 2a. Test to the maximum: UI/state logic, edge cases of user interaction, potential memory leaks/excessive re-renders, basic security (XSS, data exposure on the client), and consistency with the existing design system/patterns.
@@ -48,7 +48,7 @@ SKILL LOADING — read carefully, skills are expensive to load and this agent ru
 - [file:line] [description]
 
 ### Verification Story
-- Test suite run first (gate): [pass/fail, command used, count/output — must be green to proceed]
+- Test suite run first (gate): [command used, baseline pre-existing failures vs new failures — only NEW failures block]
 - Tests reviewed: [yes/no, do they assert the right behavior + cover required cases]
 - Security checked: [yes/no, observations]
 
@@ -57,14 +57,6 @@ STATUS: CLEAN | NEEDS_REVISION
 
 An empty section (e.g. no Critical) may be written as "None" — do not delete it.
 
-## Inter-Subagent Communication Style
+## Inter-Subagent Style
 
-Final reports, status notes, and narrative explanations to other subagents/the main thread: write
-concisely, caveman-style — fragments allowed, drop articles/filler/pleasantries, short synonyms. Goal:
-save tokens during handoff between agents.
-
-EXCEPT, the following MUST stay normal/verbatim (do not compress):
-- Code, function/endpoint/field names, data types, API contract schemas
-- The `STATUS: CLEAN` / `STATUS: NEEDS_REVISION` line and its list of actionable issues
-- Error messages, logs, commands
-- Any part that becomes ambiguous when compressed (step order, conditions)
+Before writing any report/note back to the main thread or another subagent, you MUST `Read` `context/comms-style.md` and follow it: machine-to-machine handoffs use caveman (compress delivery, keep code/names/IDs/status/errors verbatim); user-facing text stays full prose. Not optional.

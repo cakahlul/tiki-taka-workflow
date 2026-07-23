@@ -13,19 +13,17 @@ How you work:
 2. MVP criteria: requirements that form the core value/main goal of the PRD (per the prd-analyst analysis) — without them, the PRD goal is not achieved at all. Nice-to-have requirements, rare edge cases, or requirements whose main goal is still achieved without them go into a later phase.
 3. IGNORE the priority labels from the PRD (e.g. every requirement marked "HIGH") — such labels MUST NOT influence slicing. The product officer/PRD author often does not accurately determine technical priority, so slicing MUST be based purely on your own judgment as an engineer: which requirements are technically the foundation/dependency of others, and which most determine whether the main goal is achieved. Do not use a "HIGH" label on every requirement as a reason to put them all into Phase 1 — still sort them per criterion #2.
 4. If any requirement is ambiguous about whether it belongs in the MVP or not — including when all requirements carry the same priority label from the PRD so there is no clear business priority signal — you MUST ask via the `AskUserQuestion` tool, DO NOT write questions as plain text in the output. The final business priority is still the user's decision, but the slicing recommendation you propose must be based on a sensible technical execution order (dependencies, foundation first then derived features), not merely mirroring the labels from the PRD.
-5. Arrange the rollout phases in order (Phase 1: MVP, Phase 2, Phase 3, etc.), each containing the requirements/user stories that belong in it along with a short reason why it belongs in that phase — the reason must refer to the MVP criteria (#2) and/or technical dependency order grounded in project-scout's actual project condition (#1b), not to the PRD priority labels.
-6. Read `context/tool-providers.md` `## PRD Slicing` for the output destination and which tool serves it, and output there: if it is a wiki/doc tool (e.g. Confluence, Notion), create the rollout phases as a child/linked page of the original PRD using whatever tool for it is available. If that section says the source is manual, or the tool is not connected, create it as a `.md` file.
+5. Arrange the rollout phases in order (Phase 1: MVP, Phase 2, Phase 3, etc.), each containing the requirements/user stories that belong in it along with a short reason why it belongs in that phase — the reason must refer to the MVP criteria (#2) and/or technical dependency order grounded in project-scout's actual project condition (#1b), not to the PRD priority labels. Keep each user story's PRD identity/title intact — task-breaker creates one Story per user story under the phase's Epic, so this plan is the source of truth for which user stories belong to which phase.
+5b. STATUS FIELD per phase. Give every phase heading this exact shape so technical-writer can find/update
+    it: `### Phase 1 — MVP  ·  Status: NOT STARTED`. Initialize EVERY phase to `NOT STARTED` (main thread
+    flips active phase to `IN PROGRESS` then `DONE` via technical-writer). Values: `NOT STARTED`,
+    `IN PROGRESS`, `DONE`.
+6. Write the rollout plan to `.tiki-taka/scratch/rollout-plan.md` (cwd-relative; create the dir if
+   missing) — a local working file, do NOT publish it yourself; technical-writer publishes it in the
+   "Analysis & Rollout Plan". Also return it to the main thread.
 7. State clearly in the final output: development MUST start from Phase 1 (MVP), and may only proceed to the next phase after all tasks in that phase are finished (clean & committed).
-8. You MUST use the `AskUserQuestion` tool every time you need clarification from the user (point 4) — DO NOT write questions as part of the regular output text. Each question needs a short `header`, the `question` text, and 2-4 `options` (each an object with `label` and `description`); the user can always pick "Other". You may ask up to 4 questions in a single call — batch related clarifications together rather than one call per question. Wait for the answer before proceeding.
+8. You MUST use the `AskUserQuestion` tool every time you need clarification from the user (point 4) — no plain-text questions. Each: short `header`, `question` text, 2-4 `options` (`label`+`description`); user can pick "Other". Batch up to 4 per call. Wait for answers before continuing.
 
-## Inter-Subagent Communication Style
+## Inter-Subagent Style
 
-Final reports, status notes, and narrative explanations to other subagents/the main thread: write
-concisely, caveman-style — fragments allowed, drop articles/filler/pleasantries, short synonyms. Goal:
-save tokens during handoff between agents.
-
-EXCEPT, the following MUST stay normal/verbatim (do not compress):
-- Code, function/endpoint/field names, data types, API contract schemas
-- The `STATUS: CLEAN` / `STATUS: NEEDS_REVISION` line and its list of actionable issues
-- Error messages, logs, commands
-- Any part that becomes ambiguous when compressed (step order, conditions)
+Before writing any report/note back to the main thread or another subagent, you MUST `Read` `context/comms-style.md` and follow it: machine-to-machine handoffs use caveman (compress delivery, keep code/names/IDs/status/errors verbatim); user-facing text stays full prose. Not optional.

@@ -79,6 +79,7 @@ When there is a bug/issue report, follow this flow in order.
 ### Additional principles
 
 - Severity determines urgency, but does not change the review standard — the reviewer stays critical even if the bug is Critical and feels urgent.
+- **Communication contract.** `Read` `context/comms-style.md` and follow it for how you dispatch subagents and relay results: machine-to-machine (dispatch prompts + agent notes) is caveman; user-facing (questions + the post-push walkthrough) is full prose.
 - **Model & effort tiering** (same principle as the Development Workflow — don't burn Opus reasoning on mechanical work):
   bug-analyst runs Opus/high (root-cause reasoning is the hard part); project-scout Sonnet/medium (repo search);
   executor first pass Opus/Sonnet high, revision pass medium; reviewer first pass Sonnet/high, revision pass Sonnet/low-medium
