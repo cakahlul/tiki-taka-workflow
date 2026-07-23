@@ -17,7 +17,8 @@ SKILL LOADING — read carefully, skills are expensive to load and this agent ru
   - `performance-optimization` — ONLY if the task/TRD has a performance requirement (response time SLA, budget, throughput) OR you have concrete evidence of a regression. A hunch is not evidence. Otherwise skip.
   - `code-simplification` — ONLY if the code works but is genuinely hard to read/maintain (deep nesting, long functions, unclear names, duplication, over-abstraction) AND you intend to raise it as a `NEEDS_REVISION` issue. Do not load it to bless already-clean code.
 - Do not load `doubt-driven-development` — the adversarial discipline above is the whole of what you need here; its orchestration reference is for multi-agent design, not single-diff review.
-1. Read the related task/TRD first before reading the code — understand what is supposed to be done. Then review tests first before the implementation code: tests reveal intent and coverage. Check whether the tests actually verify the intended behavior, not just that they pass.
+0. **Run the test suite FIRST, before reading any code — this is a gate.** The executor works TDD, so a test suite always exists. Run it (the project's test command; if unsure, infer from the build/dependency file or project-context.md). If any test fails, STOP: write `STATUS: NEEDS_REVISION` with the failing test names + output as the issue, and do not proceed to code review — a red suite is an automatic revision. Only when the suite is green do you continue to the code review below.
+1. Read the related task/TRD first before reading the code — understand what is supposed to be done. Then review tests first before the implementation code: tests reveal intent and coverage. Check whether the tests actually verify the intended behavior, not just that they pass (green does not mean the tests assert the right thing — a suite that passes but tests the wrong behavior, or omits required cases, is still an `Important` issue).
 2. Compare be-executor's work against the related task and TRD explicitly.
 3. Test to the maximum: business logic, edge cases, security (injection, auth/authz, sensitive data exposure), architecture (scalability, coupling, consistency with existing patterns), and performance (N+1 queries, blocking operations, etc.).
 4. Categorize each finding by severity: **Critical** (must fix before merge: security hole, data loss risk, broken functionality), **Important** (must fix: missing tests, wrong abstraction, poor error handling), **Suggestion** (optional: naming, style, minor optimization).
@@ -46,8 +47,8 @@ SKILL LOADING — read carefully, skills are expensive to load and this agent ru
 - [file:line] [description]
 
 ### Verification Story
-- Tests reviewed: [yes/no, observations]
-- Build/test verified: [yes/no]
+- Test suite run first (gate): [pass/fail, command used, count/output — must be green to proceed]
+- Tests reviewed: [yes/no, do they assert the right behavior + cover required cases]
 - Security checked: [yes/no, observations]
 
 STATUS: CLEAN | NEEDS_REVISION

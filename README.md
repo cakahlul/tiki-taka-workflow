@@ -10,6 +10,20 @@ tracker / wiki you use (JIRA, Linear, GitHub Issues, Confluence, Notion, or plai
 The agent and skill `.md` files are model-agnostic — usable by any coding assistant that reads
 markdown agents/skills, not only Claude.
 
+<p align="center">
+  <img src="assets/tiki-taka-tactic.png" alt="Tiki-taka dev workflow drawn as a coach's tactic board" width="100%">
+  <br>
+  <em>
+    The workflow as a coach's tactic board. <strong>Build-up (planning):</strong> the setup gate
+    passes to <code>prd-analyst</code> + <code>project-scout</code> in parallel, up through
+    <code>prd-slicer</code> / <code>trd-writer</code> to the <code>task-breaker</code> playmaker.
+    <strong>Attack (execution):</strong> through-balls to three parallel task lanes, each
+    <code>executor → reviewer</code>; Task&nbsp;B shows the dashed revision loop back-pass.
+    <strong>Finish:</strong> every lane arrives at <code>clean → commit → push → done</code> and
+    shoots — the ball never stops on the slowest player.
+  </em>
+</p>
+
 ## Commands
 
 | Command                     | Function                                                                                                                                                                                                         |
