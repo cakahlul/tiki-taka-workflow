@@ -30,8 +30,9 @@ markdown agents/skills, not only Claude.
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `/tiki-taka:setup-workflow`   | Configure the plugin for your team: asks where PRD-slices / TRD / tasks go, which MCP/tools serve them, project location + team assignment, and design-tool provider. Writes the answers so the workflow agents stop asking. |
 | `/tiki-taka:reset-workflow`   | Reset the plugin back to generic — undo `setup-workflow`. Restores `context/team-context.md` to its blank template and deletes `tool-providers.md`. No agent files are touched.                                    |
-| `/tiki-taka:dev-workflow`   | Development Workflow: Planning Phase (prd-analyst + project-scout → prd-slicer → trd-writer → task-breaker) → Execution Phase (parallel execute barrier → parallel review barrier, repeat until CLEAN) → Commit & Push → review summary → status update. |
+| `/tiki-taka:dev-workflow`   | Development Workflow: Planning Phase (prd-analyst + project-scout → prd-slicer → trd-writer → task-breaker) → Execution Phase (per-task execute → review → revise → commit → push pipeline, no shared barrier) → review summary → status update. Also has an Execution-only entry point that skips Planning when tasks are already fully described. |
 | `/tiki-taka:bug-workflow`   | Bug Fixing Workflow: project-scout (repo/stack) → bug-analyst (severity + root cause) → parallel fixing executor-review loop → commit & push → review summary → status update → incident-reporter (if Critical/High).                                        |
+| `/tiki-taka:em-review`      | On-demand PRD-compliance audit (Engineering Manager review), separate from dev/bug-workflow: cross-checks the raw PRD against the persisted Analysis, symbol-traces each active-phase user story's acceptance criteria to reachable code (L1), auto-emits a gap-task for every partial/missing story, then offers to trigger dev-workflow Execution-only. |
 
 `dev-workflow` and `bug-workflow` read `context/team-context.md` (Local Repo Roots, Squad Members,
 Repository Mapping, Feature Scope) at the start.
@@ -89,12 +90,13 @@ Pull later updates with `claude plugin marketplace update tiki-taka-workflow`.
 
 After install, run `/tiki-taka:setup-workflow` to configure the plugin for your team.
 
-## 13 Subagents
+## 15 Subagents
 
-**Planning:** prd-analyst, prd-slicer, project-scout, trd-writer, task-breaker
+**Planning:** prd-analyst, prd-slicer, project-scout, trd-writer, task-breaker, technical-writer
 **Execution:** be-executor, be-reviewer, fe-web-executor, fe-web-reviewer, fe-mobile-executor,
 fe-mobile-reviewer
 **Bug:** bug-analyst, incident-reporter (repo/stack resolution reuses project-scout)
+**Audit:** em-reviewer (PRD-compliance auditor, driven by `/tiki-taka:em-review`)
 
 ## Bundled skills (16)
 

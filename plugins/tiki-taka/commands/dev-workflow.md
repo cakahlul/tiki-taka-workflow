@@ -111,9 +111,26 @@ ask one), append a VERBATIM row `# | Asked by | Category | Question | User answe
 `substantive` (requirements/scope/flow/design/slicing/board) or `operational` (e.g. PRD/tracker
 location). Record EVERY question, both categories. technical-writer publishes this as section 3 in Stage B.
 
-**Skip note**: for a very small task (1 file, minor fix, no ambiguous requirement), the user may ask to
-skip planning straight to execution. Confirm explicitly first — do not skip unilaterally. If planning is
-skipped there is no scratch, so `technical-writer`'s `assemble` mode is skipped too.
+### Execution-only entry point (skip Planning)
+
+Enter the workflow straight at the Execution Phase, skipping all of Planning, when the tasks are ALREADY
+fully described — either:
+
+- a very small task (1 file, minor fix, no ambiguous requirement) the user asks to jump ahead on
+  (confirm explicitly first — do not skip unilaterally); or
+- **gap-tasks emitted by `/tiki-taka:em-review`** — each already carries title, description, stack, and
+  acceptance criteria (task-breaker format), so there is nothing left to plan.
+
+When entering execution-only:
+- Skip steps 1–6 of Planning entirely. There is no scratch, so `technical-writer`'s `assemble` mode is
+  skipped too. The Q&A log is skipped.
+- Take the given tasks as-is (do NOT re-run task-breaker) and start the Execution Phase at step 1 below.
+- **Phase status**: these tasks already belong to an existing phase (em-review audits the active phase).
+  Do NOT create a new phase. If a published rollout plan exists, flip that phase's status via
+  `technical-writer` per the Execution Phase's phase-status rules; if none exists (planning was never
+  persisted), skip phase status.
+- Everything else in the Execution Phase (per-task execute → review → revise → commit → push → Done,
+  contracts for dependent tasks, story rollup) applies unchanged.
 
 ### Execution Phase (PER-TASK PIPELINE: each task flows execute → review → revise on its own, no global barrier)
 
