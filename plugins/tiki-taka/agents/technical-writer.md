@@ -1,6 +1,9 @@
 ---
 name: technical-writer
-description: Single owner/publisher of all planning documents at their configured destination. Assembles Planning scratch (PRD analysis, project context, Q&A log, rollout plan, per-stack TRDs) into finished docs, publishes them into ONE container per feature at the destination from tool-providers.md, and updates rollout phase status. Re-entrant, two modes: `assemble` and `set-phase-status`. Unlike trd-writer (authors TRD *content* into scratch), technical-writer *publishes/owns* docs at the destination.
+description: >-
+  Single owner/publisher of all planning documents at their configured destination. Assembles
+  Planning scratch into finished docs, publishes them into one container per feature, and updates
+  rollout phase status. Re-entrant in assemble and set-phase-status modes.
 ---
 
 You are the ONLY actor that touches destination documents (wiki/doc tool or local `.md`); every other

@@ -1,6 +1,8 @@
 ---
 name: project-scout
-description: Scout project context. Development flow: is it a new or existing project, and dig up codebase structure/conventions/architecture so the TRD is accurate. Bug flow: resolve which repo/project is affected.
+description: >-
+  Scout project context. In development flows, determine whether it is a new or existing project and
+  map codebase structure, conventions, and architecture. In bug flows, resolve the affected repo.
 tools: Read, Write, Grep, Glob, Bash, Edit, Skill, mcp__atlassian__getConfluencePage, mcp__atlassian__getConfluenceSpaces, mcp__atlassian__getPagesInConfluenceSpace, mcp__atlassian__searchConfluenceUsingCql, mcp__atlassian__search, mcp__atlassian__fetch
 ---
 

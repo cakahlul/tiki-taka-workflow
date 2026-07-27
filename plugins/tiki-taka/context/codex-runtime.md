@@ -41,6 +41,10 @@ the workflow intent but use the safe Codex behavior.
 
 ## Agents and parallel work
 
+- This adapter establishes `RUNTIME=codex`. Before the first delegated agent, read
+  `PLUGIN_ROOT/context/model-policy.md` completely and apply its tier mapping, role defaults,
+  escalation rules, concurrency cap, user overrides, and fallback behavior.
+
 - A request to call `tiki-taka:<agent>` means:
   1. Read `PLUGIN_ROOT/agents/<agent>.md` completely.
   2. Translate its Claude tool names using the mapping below.
@@ -48,9 +52,11 @@ the workflow intent but use the safe Codex behavior.
   4. Otherwise execute the role locally with the same isolation and output contract.
 - The workflow skill explicitly authorizes bounded subagent delegation required by its canonical
   workflow. Do not delegate unrelated work.
-- When spawning a role, pass the role instructions, relevant workspace config, exact inputs, expected
-  output, repository path, and whether it may mutate files. Never assume a spawned agent has read the
-  plugin resources.
+- When spawning a role, pass `RUNTIME=codex`, `MODEL_TIER`, the resolved model and reasoning effort,
+  role instructions, relevant workspace config, exact inputs, expected output, repository path, and
+  whether it may mutate files. Never assume a spawned agent has read the plugin resources.
+- Model-overridden Codex agents use `fork_turns: none` with a self-contained task prompt, avoiding a
+  full conversation fork and its token cost.
 - Parallelize only stages the canonical command marks independent. Preserve all dependency and
   reviewer barriers.
 

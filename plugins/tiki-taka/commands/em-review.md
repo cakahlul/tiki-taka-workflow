@@ -4,6 +4,13 @@ description: On-demand PRD-compliance audit (Engineering Manager review). Cross-
 
 # EM Review (PRD-compliance audit)
 
+## Runtime and model routing
+
+This command establishes `RUNTIME=claude`. Before calling `tiki-taka:em`, read
+`${CLAUDE_PLUGIN_ROOT}/context/model-policy.md`; `em` in review mode defaults to `strong`. Pass the
+mapped Claude model and effort per invocation. Honor user overrides and `inherit` fallback. Do not
+add a static model choice to the agent definition.
+
 On-demand. Runs OUTSIDE dev-workflow and bug-workflow — nobody is forced to pay this execution time. Use
 it when you want to verify that what the PRD promised actually shipped, before or after a release.
 

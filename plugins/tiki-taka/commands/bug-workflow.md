@@ -4,6 +4,14 @@ description: Run the Bug Fixing Workflow (project-scout repo/stack → bug-analy
 
 # Bug Fixing Workflow
 
+## Runtime and model routing
+
+This command establishes `RUNTIME=claude`. Before calling any subagent, read
+`${CLAUDE_PLUGIN_ROOT}/context/model-policy.md` and resolve that call's tier from the role/mode and
+current risk. Pass the mapped Claude model and effort per invocation. Honor user overrides, strong
+concurrency limits, escalation rules, and `inherit` fallback. Do not add static model choices to the
+agent definitions.
+
 ## Setup gate (MUST run first)
 
 **Fast path:** read the first line of `${CLAUDE_PLUGIN_ROOT}/context/tool-providers.md`. If it is
@@ -80,8 +88,5 @@ When there is a bug/issue report, follow this flow in order.
 
 - Severity determines urgency, but does not change the review standard — the reviewer stays critical even if the bug is Critical and feels urgent.
 - **Communication contract.** `Read` `context/comms-style.md` and follow it for how you dispatch subagents and relay results: machine-to-machine (dispatch prompts + agent notes) is caveman; user-facing (questions + the post-push walkthrough) is full prose.
-- **Model & effort tiering** (same principle as the Development Workflow — don't burn Opus reasoning on mechanical work):
-  bug-analyst runs Opus/high (root-cause reasoning is the hard part); project-scout Sonnet/medium (repo search);
-  executor first pass Opus/Sonnet high, revision pass medium; reviewer first pass Sonnet/high, revision pass Sonnet/low-medium
-  (re-verify only the flagged issues). A one-line typo/config fix executor may run Haiku/low — auto-detect from fix size, don't
-  wait for the user to tag it. Bump a tier when the fix touches security, money, concurrency, or a load-bearing interface.
+- **Model routing source of truth.** Use only `context/model-policy.md`; do not maintain a second tier
+  table inside this command.

@@ -124,6 +124,27 @@ The Codex compatibility layer maps Claude-specific tool names to the tools and c
 in the current Codex session. Tracker/wiki integrations remain optional and retain the local Markdown
 fallback when the configured provider is unavailable.
 
+## Runtime-aware model routing
+
+Tiki-Taka determines runtime from its entry point rather than asking an agent to guess:
+
+- Claude slash command → `RUNTIME=claude`
+- Codex workflow skill → `RUNTIME=codex`
+
+Delegated agents are routed through shared `economy`, `balanced`, and `strong` tiers. Claude maps
+those tiers to Haiku/Sonnet/Opus; Codex maps them to `gpt-5.6-terra` at low/medium reasoning and
+`gpt-5.6-sol` at high reasoning. Unsupported model overrides fall back to the user-selected session
+model instead of stopping the workflow.
+
+Mechanical scouting, publishing, and incident prose default to `economy`; normal planning, coding,
+debugging, and first-pass review use `balanced`; EM compliance review, confirmed high-risk work, and
+the second revision cycle onward use `strong`. At most two strong agents run concurrently by default.
+An explicit user model or effort choice always wins.
+
+The policy lives in `plugins/tiki-taka/context/model-policy.md`; model names are not duplicated across
+the agent definitions. Codex model-overridden workers receive a bounded task prompt without inheriting
+the full parent conversation, reducing both input tokens and context leakage.
+
 ## 15 Subagents
 
 **Planning:** prd-analyst, prd-slicer, project-scout, trd-writer, task-breaker, technical-writer

@@ -4,6 +4,14 @@ description: Analyze a PRD and scout the project in parallel, then produce an an
 
 # PRD Analyze
 
+## Runtime and model routing
+
+This command establishes `RUNTIME=claude`. Before calling any subagent, read
+`${CLAUDE_PLUGIN_ROOT}/context/model-policy.md` and resolve that call's tier from the role/mode and
+current risk. Pass the mapped Claude model and effort per invocation. Honor user overrides, strong
+concurrency limits, escalation rules, and `inherit` fallback. Do not add static model choices to the
+agent definitions.
+
 ## Setup gate (MUST run first)
 
 **Fast path:** read the first line of `${CLAUDE_PLUGIN_ROOT}/context/tool-providers.md`. If it is

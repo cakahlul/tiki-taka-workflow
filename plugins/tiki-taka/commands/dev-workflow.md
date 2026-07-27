@@ -4,6 +4,14 @@ description: Run the Development Workflow (Planning Phase → per-task execute-r
 
 # Development Workflow
 
+## Runtime and model routing
+
+This command establishes `RUNTIME=claude`. Before calling any subagent, read
+`${CLAUDE_PLUGIN_ROOT}/context/model-policy.md` and resolve that call's tier from the role/mode and
+current risk. Pass the mapped Claude model and effort per invocation. Honor user overrides, strong
+concurrency limits, escalation rules, and `inherit` fallback. Do not add static model choices to the
+agent definitions.
+
 ## Setup gate (MUST run first)
 
 **Fast path:** read the first line of `${CLAUDE_PLUGIN_ROOT}/context/tool-providers.md`. If it is
@@ -247,24 +255,5 @@ wait at a shared round boundary.
 - The reviewer must not merely approve — it must test the logic, security, and architecture critically.
 - Do not assume anything not explicit in the PRD/TRD/task, including which requirement belongs in the MVP. If ambiguous, ask the user.
 - **Communication contract.** `Read` `context/comms-style.md` and follow it for how you dispatch subagents and relay results: machine-to-machine (dispatch prompts + agent notes) is caveman; user-facing (questions + the post-push walkthrough) is full prose.
-### Model & effort tiering (match the horse to the course — don't burn Opus reasoning on mechanical work)
-
-Spawn each agent at the tier its job needs, not one-size-fits-all. Reasoning tokens (thinking) are
-output-priced, so over-powering a mechanical agent is the quietest way to waste tokens. Defaults:
-
-| Agent / pass | Model | Effort | Why |
-|---|---|---|---|
-| prd-analyst, trd-writer | Opus | high | Architecture + requirement reasoning — the hard thinking |
-| project-scout | Sonnet | medium | Search/map the repo — mechanical, not deep design |
-| prd-slicer, task-breaker | Sonnet | medium | Structural splitting from inputs already reasoned upstream |
-| em (estimate) | Opus | high | Effort estimation grounded in project condition — real engineering judgment |
-| technical-writer | Sonnet | low/medium | Assemble/publish scratch into docs + flip a phase status field — mechanical, no design reasoning |
-| executor — first pass, non-trivial | Opus/Sonnet | high | Real implementation + design decisions |
-| executor — trivial task (typo, copy, config, rename) | Haiku | low | Auto-detect from task size; do NOT wait for the user to tag the stack |
-| executor — revision pass | (same as first) | medium | Fixing a named list of issues, not re-architecting |
-| reviewer — first pass | Sonnet | high | Critical review needs care, but not Opus-tier planning |
-| reviewer — revision pass | Sonnet | low/medium | Re-verify only the flagged issues + a quick regression scan — framework already held |
-
-These are defaults, not handcuffs: bump a tier when a "trivial" task turns out to touch security, money,
-concurrency, or a load-bearing interface. When unsure whether a task is trivial, treat it as non-trivial.
-If the user marks a whole stack as lighter/heavier, honor that over the table.
+- **Model routing source of truth.** Use only `context/model-policy.md`; do not maintain a second tier
+  table inside this command.
