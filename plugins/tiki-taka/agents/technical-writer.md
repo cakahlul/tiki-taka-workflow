@@ -45,6 +45,12 @@ an earlier phase made it), publish into it; if unsure it's the right one, ask vi
    `qa-log.md` as a table `# | Asked by | Category | Question | User answer`, EVERY entry verbatim (keep
    `operational` ones — the Category column is the filter); **4. Rollout Plan** ← `rollout-plan.md` with
    each phase's `Status:` exactly as-is. Preserve links (PRD, Figma, TRD locations); invent nothing.
+   EFFORT ESTIMATION: if any estimation content exists across scratch — the "Effort Estimation (from
+   PRD)" in `prd-analysis.md`, the "Effort Estimation Check" in `project-context.md`, and/or the
+   "## Effort Estimation (per-phase roll-up)" in `rollout-plan.md` — assemble them into ONE "Effort
+   Estimation" subsection at the end of the Rollout Plan: PRD numbers verbatim, then project-scout's
+   realism annotations, then prd-slicer's per-phase roll-up. Keep the three clearly labeled/separate;
+   invent no numbers. If no scratch has any estimation, omit the subsection.
 2. Publish into the SAME container.
 3. Verify EVERY publish (Stage A TRDs + this doc) succeeded → only then delete `.tiki-taka/scratch/`.
    On any failure, keep scratch and report which files remain + their path.
