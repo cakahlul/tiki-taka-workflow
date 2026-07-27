@@ -89,6 +89,12 @@ If there is a requirement that is odd/unreasonable in this area, you MUST ask th
    phases (Phase 1: MVP, Phase 2, etc.), based on BOTH results from #1 — the prd-analyst analysis AND the
    project-scout project knowledge, so slicing reflects the actual technical condition, not assumptions. If there is a requirement that is ambiguous
    whether it belongs in the MVP or not, ask the user first.
+2b. **Effort estimation (always).** Call the subagent `tiki-taka:em` in `estimate` mode after prd-slicer —
+   whether or not the PRD asked for one; a Development & Testing estimate makes every planning report
+   clearer. It reads the scratch (`prd-analysis.md`, `rollout-plan.md`, `project-context.md`), produces
+   per-story Dev + Test effort grounded in the actual project condition, rolls it up per phase, and writes
+   `.tiki-taka/scratch/effort-estimation.md` for technical-writer to publish into the Rollout Plan
+   (Stage B). Relay any of its `AskUserQuestion` scoping questions to the user and wait.
 3. Call the subagent `tiki-taka:trd-writer` to create the TRD **specifically for the currently active phase** (starting from
    Phase 1/MVP), based on the results of prd-slicer and project-scout from #1-#2. Project-scout does NOT
    need to be called again at this point — the result from #1 is sufficient unless there has been a significant change in project
@@ -251,6 +257,7 @@ output-priced, so over-powering a mechanical agent is the quietest way to waste 
 | prd-analyst, trd-writer | Opus | high | Architecture + requirement reasoning — the hard thinking |
 | project-scout | Sonnet | medium | Search/map the repo — mechanical, not deep design |
 | prd-slicer, task-breaker | Sonnet | medium | Structural splitting from inputs already reasoned upstream |
+| em (estimate) | Opus | high | Effort estimation grounded in project condition — real engineering judgment |
 | technical-writer | Sonnet | low/medium | Assemble/publish scratch into docs + flip a phase status field — mechanical, no design reasoning |
 | executor — first pass, non-trivial | Opus/Sonnet | high | Real implementation + design decisions |
 | executor — trivial task (typo, copy, config, rename) | Haiku | low | Auto-detect from task size; do NOT wait for the user to tag the stack |

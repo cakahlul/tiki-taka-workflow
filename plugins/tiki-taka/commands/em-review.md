@@ -26,11 +26,11 @@ its value differs from the template placeholder (any `<...>` token or literals l
 - **All answered** → proceed.
 
 **Before starting**, read `${CLAUDE_PLUGIN_ROOT}/context/team-context.md` for Local Repo Roots (pass them
-to em-reviewer so it knows where to trace code) and `${CLAUDE_PLUGIN_ROOT}/context/tool-providers.md` for:
+to em so it knows where to trace code) and `${CLAUDE_PLUGIN_ROOT}/context/tool-providers.md` for:
 - **PRD Slicing** provider → raw PRD source AND where the Analysis & Rollout Plan was published.
-- **Tasks** provider → where em-reviewer emits gap-tasks.
+- **Tasks** provider → where em emits gap-tasks.
 
-Pass these so em-reviewer does NOT re-ask the user. If a provider is "none (not connected)", pass the
+Pass these so em does NOT re-ask the user. If a provider is "none (not connected)", pass the
 destination but tell it to fall back to local `.md`.
 
 ## Minimal solution (MUST for all coding tasks)
@@ -42,11 +42,11 @@ part (this command is mostly analysis); it applies to any gap-task execution tri
 
 ### 1. Run the audit
 
-Call `tiki-taka:em-reviewer`. Tell it: the feature/PRD, the Local Repo Roots, and the scope — **active
-phase by default**; pass a different phase or "whole PRD" only if the user asked. Relay any of its
+Call `tiki-taka:em` in **`review` mode**. Tell it: the feature/PRD, the Local Repo Roots, and the scope
+— **active phase by default**; pass a different phase or "whole PRD" only if the user asked. Relay any of its
 questions (`AskUserQuestion`) to the user and wait.
 
-em-reviewer cross-checks raw PRD ↔ Analysis (analysis gaps), symbol-traces each user story's AC to
+em cross-checks raw PRD ↔ Analysis (analysis gaps), symbol-traces each user story's AC to
 reachable non-stub code (execution gaps), assigns ✅/⚠️/❌ per story, and **auto-emits a gap-task for every
 ⚠️ and ❌**.
 

@@ -18,12 +18,6 @@ How you work:
     it: `### Phase 1 — MVP  ·  Status: NOT STARTED`. Initialize EVERY phase to `NOT STARTED` (main thread
     flips active phase to `IN PROGRESS` then `DONE` via technical-writer). Values: `NOT STARTED`,
     `IN PROGRESS`, `DONE`.
-5c. EFFORT ESTIMATION ROLL-UP. If prd-analyst carried an "Effort Estimation (from PRD)" AND/OR project-scout
-    gave an "Effort Estimation Check", add an "## Effort Estimation (per-phase roll-up)" section to your
-    scratch rollout-plan.md holding, grouped per rollout phase, the effort that rolls up into each phase
-    (sum the per-story estimates that land in that phase, per your slicing). Do NOT restate the PRD's raw
-    numbers or scout's annotations here — those live in their own scratch; technical-writer assembles all
-    three into the final Rollout Plan. If neither input provided an estimation, omit this section.
 6. Write the rollout plan to `.tiki-taka/scratch/rollout-plan.md` (cwd-relative; create the dir if
    missing) — a local working file, do NOT publish it yourself; technical-writer publishes it in the
    "Analysis & Rollout Plan". Also return it to the main thread.

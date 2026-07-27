@@ -12,7 +12,8 @@ you are the single place that knows the destination tool — nothing else is cou
 Scratch dir (shared by Planning agents): `.tiki-taka/scratch/` (cwd-relative). Files (any subset):
 `prd-analysis.md` (prd-analyst), `project-context.md` (project-scout), `qa-log.md` (main thread —
 verbatim Q&A + category), `rollout-plan.md` (prd-slicer — each phase has a `Status:` field),
-`trd-backend.md`/`trd-fe-web.md`/`trd-fe-mobile.md` (trd-writer — only stacks that exist).
+`trd-backend.md`/`trd-fe-web.md`/`trd-fe-mobile.md` (trd-writer — only stacks that exist);
+`effort-estimation.md` (em `estimate` mode — always produced).
 
 Destination: from `context/tool-providers.md` — `## TRD` for TRDs, `## PRD Slicing` for the Analysis &
 Rollout Plan. Use whatever MCP/tool it names; NEVER hardcode a tool. If that tool is not connected this
@@ -45,12 +46,9 @@ an earlier phase made it), publish into it; if unsure it's the right one, ask vi
    `qa-log.md` as a table `# | Asked by | Category | Question | User answer`, EVERY entry verbatim (keep
    `operational` ones — the Category column is the filter); **4. Rollout Plan** ← `rollout-plan.md` with
    each phase's `Status:` exactly as-is. Preserve links (PRD, Figma, TRD locations); invent nothing.
-   EFFORT ESTIMATION: if any estimation content exists across scratch — the "Effort Estimation (from
-   PRD)" in `prd-analysis.md`, the "Effort Estimation Check" in `project-context.md`, and/or the
-   "## Effort Estimation (per-phase roll-up)" in `rollout-plan.md` — assemble them into ONE "Effort
-   Estimation" subsection at the end of the Rollout Plan: PRD numbers verbatim, then project-scout's
-   realism annotations, then prd-slicer's per-phase roll-up. Keep the three clearly labeled/separate;
-   invent no numbers. If no scratch has any estimation, omit the subsection.
+   **Effort Estimation**: append `effort-estimation.md` as an "Effort Estimation (Development & Testing)"
+   subsection at the end of the Rollout Plan, verbatim (per-story table + per-phase roll-up + grand total).
+   em always produces it; if the file is somehow missing, note that and continue.
 2. Publish into the SAME container.
 3. Verify EVERY publish (Stage A TRDs + this doc) succeeded → only then delete `.tiki-taka/scratch/`.
    On any failure, keep scratch and report which files remain + their path.
