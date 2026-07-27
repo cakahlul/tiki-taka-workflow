@@ -2,8 +2,10 @@
 
 A PRD-to-ship development workflow orchestrator for any software team. It runs a critical-thinking
 planning pipeline (challenge the PRD, slice by technical dependency, write a TRD, break into tasks)
-and a parallel execute→review barrier loop with contract-first dependency handling — as a
-**command-only plugin** that runs ONLY when you call its slash command, with no auto-trigger.
+and a parallel execute→review barrier loop with contract-first dependency handling. It supports
+**Claude Code and Codex** from the same workflow source: Claude Code uses explicit slash commands,
+while Codex uses explicit workflow skills. The large orchestration workflows do not auto-trigger for
+ordinary coding requests.
 
 Team-agnostic: nothing is hardcoded to a specific squad, and it works with whatever issue
 tracker / wiki you use (JIRA, Linear, GitHub Issues, Confluence, Notion, or plain `.md` files).
@@ -33,6 +35,12 @@ markdown agents/skills, not only Claude.
 | `/tiki-taka:dev-workflow`   | Development Workflow: Planning Phase (prd-analyst + project-scout → prd-slicer → trd-writer → task-breaker) → Execution Phase (per-task execute → review → revise → commit → push pipeline, no shared barrier) → review summary → status update. Also has an Execution-only entry point that skips Planning when tasks are already fully described. |
 | `/tiki-taka:bug-workflow`   | Bug Fixing Workflow: project-scout (repo/stack) → bug-analyst (severity + root cause) → parallel fixing executor-review loop → commit & push → review summary → status update → incident-reporter (if Critical/High).                                        |
 | `/tiki-taka:em-review`      | On-demand PRD-compliance audit (Engineering Manager review), separate from dev/bug-workflow: cross-checks the raw PRD against the persisted Analysis, symbol-traces each active-phase user story's acceptance criteria to reachable code (L1), auto-emits a gap-task for every partial/missing story, then offers to trigger dev-workflow Execution-only. |
+
+These slash commands remain the Claude Code entry points. Codex exposes the same six entry points as
+plugin skills: `setup-workflow`, `reset-workflow`, `dev-workflow`, `bug-workflow`, `prd-analyze`, and
+`em-review`. For example, tell Codex “Run the Tiki-Taka development workflow” or explicitly invoke
+the installed `tiki-taka:dev-workflow` skill. Each Codex adapter reads the corresponding canonical
+Claude command, so the workflow stages do not have two independent copies that can drift.
 
 `dev-workflow` and `bug-workflow` read `context/team-context.md` (Local Repo Roots, Squad Members,
 Repository Mapping, Feature Scope) at the start.
@@ -71,7 +79,7 @@ whatever issue-tracker or wiki tool is connected in your session (an MCP server,
 JIRA/Linear/GitHub Issues/Confluence/Notion, etc.). If none is connected, the agents fall back to
 local `.md` files and tell you — the workflow still runs.
 
-## Installation
+## Claude Code installation
 
 **Install from Bitbucket (recommended):** register the repo as a marketplace by its Git URL, then
 install. The marketplace name is `tiki-taka-workflow` (the `name` in `.claude-plugin/marketplace.json`).
@@ -90,15 +98,41 @@ Pull later updates with `claude plugin marketplace update tiki-taka-workflow`.
 
 After install, run `/tiki-taka:setup-workflow` to configure the plugin for your team.
 
+## Codex installation
+
+Register this repository as a Codex marketplace, install the plugin, then start a new Codex thread so
+the newly installed skills are discovered:
+
+```bash
+codex plugin marketplace add git@bitbucket.org:tunaiku/tiki-taka-workflow.git
+codex plugin add tiki-taka@tiki-taka-workflow
+```
+
+For local development from a checkout of this repository:
+
+```bash
+codex plugin marketplace add /absolute/path/to/tiki-taka-workflow
+codex plugin add tiki-taka@tiki-taka-workflow
+```
+
+In the new thread, say “Set up Tiki-Taka for this workspace.” Codex stores mutable configuration in
+the target workspace under `.tiki-taka/config/`; it does not edit the installed plugin cache. Scratch
+planning artifacts live under `.tiki-taka/scratch/`. Keep `.tiki-taka/` out of source control when it
+contains private team configuration or temporary planning data.
+
+The Codex compatibility layer maps Claude-specific tool names to the tools and connectors available
+in the current Codex session. Tracker/wiki integrations remain optional and retain the local Markdown
+fallback when the configured provider is unavailable.
+
 ## 15 Subagents
 
 **Planning:** prd-analyst, prd-slicer, project-scout, trd-writer, task-breaker, technical-writer
 **Execution:** be-executor, be-reviewer, fe-web-executor, fe-web-reviewer, fe-mobile-executor,
 fe-mobile-reviewer
 **Bug:** bug-analyst, incident-reporter (repo/stack resolution reuses project-scout)
-**Audit:** em-reviewer (PRD-compliance auditor, driven by `/tiki-taka:em-review`)
+**Audit:** em in review mode (PRD-compliance auditor, driven by `/tiki-taka:em-review`)
 
-## Bundled skills (16)
+## Bundled skills (18 support skills + 6 Codex workflow adapters)
 
 Self-contained — every skill referenced by an agent is bundled along, no need to install another plugin:
 
@@ -107,12 +141,12 @@ Self-contained — every skill referenced by an agent is bundled along, no need 
 `source-driven-development`, `code-review-and-quality`, `code-simplification`,
 `security-and-hardening`, `performance-optimization`, `planning-and-task-breakdown`,
 `spec-driven-development`, `interview-me`, `idea-refine`,
-`frontend-ui-engineering`, `doubt-driven-development`.
+`frontend-ui-engineering`, `doubt-driven-development`, `executor-workflow`, `reviewer-workflow`.
 
 ## Notes
 
-- **Command-only**: the orchestration entry point is only via `/tiki-taka:*`. Skills may be model-invoked
-  (called by Claude itself when the context fits) — that is exactly their nature as support.
+- **Explicit orchestration**: Claude Code enters through `/tiki-taka:*`; Codex enters through the six
+  workflow skills. Support skills may still be model-invoked when their descriptions match.
 - Team data is not hardcoded — it lives entirely in `context/team-context.md`, which you fill in (see Setup).
 - **Minimality is built in**: agents lean on the bundled `minimal-solution-check` skill, so no external
   plugin is required. If you also install a dedicated laziness plugin like `ponytail`, it layers on top and

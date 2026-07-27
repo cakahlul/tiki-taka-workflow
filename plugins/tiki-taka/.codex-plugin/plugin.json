@@ -1,0 +1,33 @@
+{
+  "name": "tiki-taka",
+  "version": "1.6.0",
+  "description": "PRD-to-ship development and bug-fixing workflow orchestrator with planning, execution, review, and audit loops.",
+  "author": {
+    "name": "Ahlul Esasjana"
+  },
+  "keywords": [
+    "development-workflow",
+    "prd",
+    "code-review",
+    "engineering"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Tiki-Taka Workflow",
+    "shortDescription": "Plan, execute, review, and ship software work",
+    "longDescription": "A PRD-to-ship workflow orchestrator for development, bug fixing, PRD analysis, and implementation compliance audits.",
+    "developerName": "Ahlul Esasjana",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Set up Tiki-Taka for this workspace.",
+      "Run the Tiki-Taka development workflow.",
+      "Run a Tiki-Taka bug workflow."
+    ],
+    "brandColor": "#176B3A"
+  }
+}
