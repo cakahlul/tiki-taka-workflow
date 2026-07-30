@@ -55,10 +55,29 @@ the workflow intent but use the safe Codex behavior.
 - When spawning a role, pass `RUNTIME=codex`, `MODEL_TIER`, the resolved model and reasoning effort,
   role instructions, relevant workspace config, exact inputs, expected output, repository path, and
   whether it may mutate files. Never assume a spawned agent has read the plugin resources.
+- Pass **locations, not payloads**: give the spawned role a document's path/URL plus the sections it
+  needs, not the whole document pasted into the prompt. Since `fork_turns: none` prompts are
+  self-contained, anything pasted is paid for by every role you paste it into. Revision spawns carry
+  only the reviewer's issue list.
 - Model-overridden Codex agents use `fork_turns: none` with a self-contained task prompt, avoiding a
   full conversation fork and its token cost.
 - Parallelize only stages the canonical command marks independent. Preserve all dependency and
   reviewer barriers.
+
+## Context budget
+
+- `PLUGIN_ROOT/context/context-budget.md` applies on Codex exactly as written. Read it before the first
+  delegated agent and pass it to every spawned role — a Codex agent does not inherit the parent's reads.
+- The `tools:` and `disallowedTools:` frontmatter in `agents/*.md` is a Claude Code availability
+  mechanism. On Codex it is not enforced by the runtime, so treat each agent's `tools:` line as the
+  **declared capability set for that role**: give a spawned role access to those capabilities and no
+  more, and do not hand it unrelated connectors. `disallowedTools: mcp__*` means that role gets no
+  MCP/connector access at all — it works from the filesystem and the command runner only.
+- The budget target (60k per agent run) is a planning number, not a runtime limit, on both runtimes.
+  Tool RESULTS are what consume it: prefer `rg`/`git diff --stat`/`jq`-filtered output over reading
+  whole files or dumping raw responses, per the budget file.
+- When a spawned role reports it ran out of room with work uncovered, surface that upward verbatim.
+  Never present a partial audit, review, or breakdown as complete.
 
 ## Tool mapping
 

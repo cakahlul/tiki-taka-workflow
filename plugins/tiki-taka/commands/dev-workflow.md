@@ -69,6 +69,21 @@ a library/dependency — call the skill `tiki-taka:minimal-solution-check` first
 Do not wait for the user to say so. Skip for non-coding tasks (prose, translation, general knowledge). Goal:
 the most minimal solution that still works (YAGNI, stdlib before custom code, native before dependency).
 
+## Context budget
+
+Read `${CLAUDE_PLUGIN_ROOT}/context/context-budget.md` once at the start. Every agent you dispatch reads
+it too; your job is to not undermine it from the orchestration side:
+
+- **Pass locations, not payloads.** Give an agent the task in full plus the TRD/document LOCATION — it
+  reads what it needs. Pasting whole documents into a dispatch prompt makes every agent pay for content
+  most of them don't use.
+- **Revision dispatches carry ONLY the reviewer's issue list** — never re-attach the task, TRD, or code
+  unless the scope actually changed.
+- **Relay agent reports compressed.** An agent's report goes into YOUR context; summarize it down to
+  what the next step needs (status, keys, locations, decisions) rather than carrying it verbatim.
+- If an agent reports it ran out of room and left work uncovered, surface that to the user — do not
+  paper over it or silently re-dispatch the same oversized job.
+
 ---
 
 When there is a development task, follow this flow in order. Do not skip a stage unless the user explicitly asks to jump ahead.
@@ -195,8 +210,10 @@ contracted tasks alike start together — but from there each task advances at i
 wait at a shared round boundary.
 
 1. **Kick off — all executors in one message, in parallel**: CALL ALL ACTIVE-TASK EXECUTORS IN ONE
-   MESSAGE (`tiki-taka:be-executor` / `tiki-taka:fe-web-executor` / `tiki-taka:fe-mobile-executor`). Include the task,
-   related TRD, and the dependency contract (if any) IN FULL. At the start, if the task exists in an issue
+   MESSAGE (`tiki-taka:be-executor` / `tiki-taka:fe-web-executor` / `tiki-taka:fe-mobile-executor`). Include the task
+   IN FULL and the dependency contract (if any) IN FULL — those are the contract the executor delivers
+   against. For the TRD, pass its LOCATION plus the sections relevant to this task, not the whole
+   document: the executor reads what it needs from there. At the start, if the task exists in an issue
    tracker (has an issue key/id) and a tool for that tracker is available, the executor MUST move the ticket
    status to **In Progress** before starting to code. Do NOT wait for all executors here — proceed to
    review each task the moment ITS executor returns.

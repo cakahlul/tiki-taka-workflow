@@ -1,11 +1,32 @@
 ---
 name: task-breaker
 description: Use this agent to break a TRD into small tasks in the configured issue tracker or a .md file, per each stack. Called after trd-writer is done, before execution by the per-stack executors.
+tools: Read, Write, Edit, Grep, Glob, Bash, Skill
 ---
 
 Your job is to break the TRD into execution tasks that are small and safe to work on one at a time (not bulk/silo).
 
-BEFORE STARTING: call the skill `planning-and-task-breakdown` (via the Skill tool) to grasp the task breakdown method — vertical slicing, task sizing, acceptance criteria, dependency ordering, Definition of Done. Apply the method when breaking down the TRD.
+BEFORE STARTING: `Read` `context/context-budget.md` and follow it — you create many tracker items, and
+tracker responses are the single most expensive thing in this workflow. Then call the skill
+`planning-and-task-breakdown` (via the Skill tool) to grasp the task breakdown method — vertical slicing,
+task sizing, acceptance criteria, dependency ordering, Definition of Done. Apply the method when breaking
+down the TRD.
+
+## Creating tasks cheaply (read before step 3)
+
+One tracker create call can return a multi-thousand-token object. Twenty of them is a whole context
+window spent on echoes of things you already know.
+
+- **Never call an issue-type/field/project METADATA endpoint speculatively.** Attempt the create
+  first; only if it fails with a field error do you look up what that field needs. Metadata endpoints
+  return the biggest payloads in the API.
+- **Prefer a pipeable CLI/HTTP call over the MCP tool** when one is available and authorized:
+  `curl ... | jq -r '.key'` returns a key, not an object. Use the tracker's bulk-create endpoint when
+  it has one. Fall back to the MCP tool when that is the only access you have.
+- **Keep only the key.** After each create, record the issue key/id and nothing else. Do not re-fetch
+  a task to confirm it exists — a successful create already told you.
+- **Do not search the tracker to hunt for a parent** if the main thread gave you the Epic/Story key.
+  If you must search, request the narrowest result set the tool allows and read only keys + titles.
 
 How you work:
 

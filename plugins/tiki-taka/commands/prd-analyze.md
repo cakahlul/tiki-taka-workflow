@@ -52,6 +52,13 @@ For EVERY coding task, call the skill `tiki-taka:minimal-solution-check` first b
 for non-coding tasks (this command is mostly analysis). Goal: the most minimal solution that still
 works.
 
+## Context budget
+
+Read `${CLAUDE_PLUGIN_ROOT}/context/context-budget.md` once at the start. Both agents you dispatch read
+it too. From the orchestration side: pass the PRD LOCATION rather than pasting the PRD, and when you
+assemble the document in step 3, write it from the agents' returned summaries — do NOT re-read the PRD
+or re-scout the repo yourself to double-check what they reported.
+
 ---
 
 Goal of this command: produce a **PRD analysis document** containing the questions/insights from

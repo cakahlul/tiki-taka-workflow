@@ -45,6 +45,20 @@ destination but tell it to fall back to local `.md`.
 For EVERY coding task, call the skill `tiki-taka:minimal-solution-check` first. Skip for the pure-audit
 part (this command is mostly analysis); it applies to any gap-task execution triggered at the end.
 
+## Context budget
+
+Read `${CLAUDE_PLUGIN_ROOT}/context/context-budget.md` once at the start; `em` reads it too. This is the
+heaviest single agent run in the plugin — it traces many stories across real repos.
+
+**Scope it before you dispatch.** Default to the active phase (never "whole PRD" unless the user asked).
+If the active phase has a lot of user stories, dispatch `em` per batch of stories rather than all at once
+— several honest audits beat one that ran out of room halfway. Each batch returns complete verdicts plus
+evidence, and you merge them for the step-2 report.
+
+If `em` reports it could not audit every in-scope story, **say so plainly in the verdict report** with the
+story names it skipped. A missing audit is not the same as a ✅, and presenting it as one is exactly the
+lossy chain this command exists to catch.
+
 ---
 
 ### 1. Run the audit

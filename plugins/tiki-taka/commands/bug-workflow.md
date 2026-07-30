@@ -56,6 +56,14 @@ a library/dependency — call the skill `tiki-taka:minimal-solution-check` first
 Do not wait for the user to say so. Skip for non-coding tasks. Goal: the most minimal solution that still
 works (YAGNI, stdlib before custom code, native before dependency).
 
+## Context budget
+
+Read `${CLAUDE_PLUGIN_ROOT}/context/context-budget.md` once at the start; every agent you dispatch reads
+it too. From the orchestration side: pass the bug report in full plus repo/file LOCATIONS rather than
+pasted code, send revision dispatches with ONLY the reviewer's issue list, and relay agent reports
+compressed down to what the next step needs. If an agent reports it ran out of room with work uncovered,
+surface that to the user rather than re-dispatching the same oversized job.
+
 ---
 
 When there is a bug/issue report, follow this flow in order.
