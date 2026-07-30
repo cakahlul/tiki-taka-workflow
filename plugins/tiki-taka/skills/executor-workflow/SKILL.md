@@ -10,8 +10,35 @@ This is the process every executor agent follows regardless of stack. It says no
 ## 0. Context budget
 
 `Read` `context/context-budget.md` first and follow it for every command and file read in this pass.
-For an executor the usual budget killers are **test/build logs** (step 3) and **re-reading things on a
-revision pass** (step 5) — both are handled explicitly below. Target 60k for the whole pass.
+Target 60k for the whole pass.
+
+### 0a. EVERY test/build/lint run, not just the baseline
+
+You run tests far more often than anyone else in this workflow — TDD alone re-runs them on every
+RED-GREEN-REFACTOR cycle. So this applies to **every** invocation, in step 3 and in every cycle after it:
+
+- **Always pipe:** `<cmd> 2>&1 | tail -30`. Never run a bare `npm test` / `go test ./...` / `pytest` /
+  `jest` — a suite with hundreds of files prints hundreds of PASS lines you gain nothing from. This
+  holds even when a skill or checklist quotes the bare command (e.g. TDD's `npm test`): pipe it anyway.
+- **Run the narrowest scope that answers your question.** During a TDD cycle you care about the test you
+  just wrote — run THAT test/file (`jest path/to/file`, `go test ./pkg/...`, `pytest path::test`), not
+  the whole suite. Full suite belongs at the baseline and once before you report, not on every cycle.
+- **On failure, get detail from the one failing test**, re-run alone. Don't re-run everything to see it.
+
+### 0b. Environment failures are NOT your task — stop early
+
+If the suite/build fails for a reason unrelated to your change — an unreachable dependency or registry,
+missing credentials, a broken lockfile, a service that won't start, a toolchain/version mismatch — do
+**not** enter a debugging loop over it. That loop is the single most expensive thing an executor can do:
+every retry costs a full command run plus the reasoning around it, and the cause is usually outside the
+repo entirely.
+
+Instead: attempt at most **one** obvious remedy (e.g. the project's documented install/tidy step). If it
+still fails, STOP and report it as a blocker — quote the shortest decisive error line, say what you
+tried, and state plainly that it is a pre-existing environment problem, not a regression from your work.
+Then continue with whatever verification IS available (typecheck, lint, a scoped test that does run) and
+say which you used. `debugging-and-error-recovery` is for failures in the code you are writing, not for
+a broken environment.
 
 ## 1. Review lessons check
 
