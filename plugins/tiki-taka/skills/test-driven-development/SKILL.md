@@ -341,7 +341,9 @@ For detailed testing patterns, examples, and anti-patterns across frameworks, se
 After completing any implementation:
 
 - [ ] Every new behavior has a corresponding test
-- [ ] All tests pass: `npm test`
+- [ ] All tests pass — run the project's test command piped: `<test cmd> 2>&1 | tail -30` (e.g.
+      `npm test 2>&1 | tail -30`). During the cycle, run only the test you are working on; save the
+      full suite for this final check.
 - [ ] Bug fixes include a reproduction test that failed before the fix
 - [ ] Test names describe the behavior being verified
 - [ ] No tests were skipped or disabled

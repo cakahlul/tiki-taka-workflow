@@ -4,6 +4,14 @@ description: Analyze a PRD and scout the project in parallel, then produce an an
 
 # PRD Analyze
 
+## Runtime and model routing
+
+This command establishes `RUNTIME=claude`. Before calling any subagent, read
+`${CLAUDE_PLUGIN_ROOT}/context/model-policy.md` and resolve that call's tier from the role/mode and
+current risk. Pass the mapped Claude model and effort per invocation. Honor user overrides, strong
+concurrency limits, escalation rules, and `inherit` fallback. Do not add static model choices to the
+agent definitions.
+
 ## Setup gate (MUST run first)
 
 **Fast path:** read the first line of `${CLAUDE_PLUGIN_ROOT}/context/tool-providers.md`. If it is
@@ -43,6 +51,13 @@ usual (generic behavior).
 For EVERY coding task, call the skill `tiki-taka:minimal-solution-check` first before working. Skip
 for non-coding tasks (this command is mostly analysis). Goal: the most minimal solution that still
 works.
+
+## Context budget
+
+Read `${CLAUDE_PLUGIN_ROOT}/context/context-budget.md` once at the start. Both agents you dispatch read
+it too. From the orchestration side: pass the PRD LOCATION rather than pasting the PRD, and when you
+assemble the document in step 3, write it from the agents' returned summaries — do NOT re-read the PRD
+or re-scout the repo yourself to double-check what they reported.
 
 ---
 

@@ -1,6 +1,7 @@
 ---
 name: incident-reporter
 description: Use this agent to create an incident report, ONLY for bugs with Critical or High severity. Called after fixing is done and CLEAN from the relevant reviewer.
+tools: Read, Write, Edit, Grep, Glob, Bash
 ---
 
 Your job is to create a clear, actionable incident report for Critical/High bugs.

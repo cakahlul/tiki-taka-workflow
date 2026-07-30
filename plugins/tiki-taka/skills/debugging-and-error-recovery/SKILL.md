@@ -33,6 +33,32 @@ When anything unexpected happens:
 
 **Don't push past a failing test or broken build to work on the next feature.** Errors compound. A bug in Step 3 that goes unfixed makes Steps 4-6 wrong.
 
+### First, decide whose bug it is
+
+Before starting the triage below, check whether the failure is even yours to fix. Diagnose it as an
+**environment/infrastructure failure** — not a code bug — when the error is about reaching or setting up
+the world rather than about your logic:
+
+- a dependency, registry, or module proxy that can't be reached (HTTP 4xx/5xx, auth rejected, DNS,
+  expired or deprecated credentials)
+- missing credentials, tokens, or config the repo expects you to already have
+- a broken/incompatible lockfile, or a toolchain/runtime version the project requires and this machine
+  doesn't have
+- a required service (DB, cache, queue, emulator) that isn't running
+- the same failure reproduces on a clean checkout with **none** of your changes applied
+
+For these, the triage below will not converge, because the cause is outside the repo. Attempt **one**
+obvious documented remedy (the project's install/tidy/setup step). If it still fails: **STOP**. Report it
+as a blocker with the shortest decisive error line, what you tried, and the fact that it's pre-existing
+— then fall back to whatever verification still works (typecheck, lint, a scoped test that does run) and
+say which you used.
+
+Repeatedly retrying an environment failure is the most expensive mistake available here: every attempt
+costs a full command run plus reasoning, and none of it moves the task forward. **Two failed attempts at
+the same environment error means stop and report, not try a third thing.**
+
+The rest of this skill is for failures in the code you are writing.
+
 ## The Triage Checklist
 
 Work through these steps in order. Do not skip steps.

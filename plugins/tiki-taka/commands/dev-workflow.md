@@ -4,6 +4,14 @@ description: Run the Development Workflow (Planning Phase → per-task execute-r
 
 # Development Workflow
 
+## Runtime and model routing
+
+This command establishes `RUNTIME=claude`. Before calling any subagent, read
+`${CLAUDE_PLUGIN_ROOT}/context/model-policy.md` and resolve that call's tier from the role/mode and
+current risk. Pass the mapped Claude model and effort per invocation. Honor user overrides, strong
+concurrency limits, escalation rules, and `inherit` fallback. Do not add static model choices to the
+agent definitions.
+
 ## Setup gate (MUST run first)
 
 **Fast path:** read the first line of `${CLAUDE_PLUGIN_ROOT}/context/tool-providers.md`. If it is
@@ -60,6 +68,21 @@ For EVERY coding task — writing, adding, refactoring, fixing, reviewing, desig
 a library/dependency — call the skill `tiki-taka:minimal-solution-check` first before working.
 Do not wait for the user to say so. Skip for non-coding tasks (prose, translation, general knowledge). Goal:
 the most minimal solution that still works (YAGNI, stdlib before custom code, native before dependency).
+
+## Context budget
+
+Read `${CLAUDE_PLUGIN_ROOT}/context/context-budget.md` once at the start. Every agent you dispatch reads
+it too; your job is to not undermine it from the orchestration side:
+
+- **Pass locations, not payloads.** Give an agent the task in full plus the TRD/document LOCATION — it
+  reads what it needs. Pasting whole documents into a dispatch prompt makes every agent pay for content
+  most of them don't use.
+- **Revision dispatches carry ONLY the reviewer's issue list** — never re-attach the task, TRD, or code
+  unless the scope actually changed.
+- **Relay agent reports compressed.** An agent's report goes into YOUR context; summarize it down to
+  what the next step needs (status, keys, locations, decisions) rather than carrying it verbatim.
+- If an agent reports it ran out of room and left work uncovered, surface that to the user — do not
+  paper over it or silently re-dispatch the same oversized job.
 
 ---
 
@@ -187,8 +210,10 @@ contracted tasks alike start together — but from there each task advances at i
 wait at a shared round boundary.
 
 1. **Kick off — all executors in one message, in parallel**: CALL ALL ACTIVE-TASK EXECUTORS IN ONE
-   MESSAGE (`tiki-taka:be-executor` / `tiki-taka:fe-web-executor` / `tiki-taka:fe-mobile-executor`). Include the task,
-   related TRD, and the dependency contract (if any) IN FULL. At the start, if the task exists in an issue
+   MESSAGE (`tiki-taka:be-executor` / `tiki-taka:fe-web-executor` / `tiki-taka:fe-mobile-executor`). Include the task
+   IN FULL and the dependency contract (if any) IN FULL — those are the contract the executor delivers
+   against. For the TRD, pass its LOCATION plus the sections relevant to this task, not the whole
+   document: the executor reads what it needs from there. At the start, if the task exists in an issue
    tracker (has an issue key/id) and a tool for that tracker is available, the executor MUST move the ticket
    status to **In Progress** before starting to code. Do NOT wait for all executors here — proceed to
    review each task the moment ITS executor returns.
@@ -247,24 +272,5 @@ wait at a shared round boundary.
 - The reviewer must not merely approve — it must test the logic, security, and architecture critically.
 - Do not assume anything not explicit in the PRD/TRD/task, including which requirement belongs in the MVP. If ambiguous, ask the user.
 - **Communication contract.** `Read` `context/comms-style.md` and follow it for how you dispatch subagents and relay results: machine-to-machine (dispatch prompts + agent notes) is caveman; user-facing (questions + the post-push walkthrough) is full prose.
-### Model & effort tiering (match the horse to the course — don't burn Opus reasoning on mechanical work)
-
-Spawn each agent at the tier its job needs, not one-size-fits-all. Reasoning tokens (thinking) are
-output-priced, so over-powering a mechanical agent is the quietest way to waste tokens. Defaults:
-
-| Agent / pass | Model | Effort | Why |
-|---|---|---|---|
-| prd-analyst, trd-writer | Opus | high | Architecture + requirement reasoning — the hard thinking |
-| project-scout | Sonnet | medium | Search/map the repo — mechanical, not deep design |
-| prd-slicer, task-breaker | Sonnet | medium | Structural splitting from inputs already reasoned upstream |
-| em (estimate) | Opus | high | Effort estimation grounded in project condition — real engineering judgment |
-| technical-writer | Sonnet | low/medium | Assemble/publish scratch into docs + flip a phase status field — mechanical, no design reasoning |
-| executor — first pass, non-trivial | Opus/Sonnet | high | Real implementation + design decisions |
-| executor — trivial task (typo, copy, config, rename) | Haiku | low | Auto-detect from task size; do NOT wait for the user to tag the stack |
-| executor — revision pass | (same as first) | medium | Fixing a named list of issues, not re-architecting |
-| reviewer — first pass | Sonnet | high | Critical review needs care, but not Opus-tier planning |
-| reviewer — revision pass | Sonnet | low/medium | Re-verify only the flagged issues + a quick regression scan — framework already held |
-
-These are defaults, not handcuffs: bump a tier when a "trivial" task turns out to touch security, money,
-concurrency, or a load-bearing interface. When unsure whether a task is trivial, treat it as non-trivial.
-If the user marks a whole stack as lighter/heavier, honor that over the table.
+- **Model routing source of truth.** Use only `context/model-policy.md`; do not maintain a second tier
+  table inside this command.

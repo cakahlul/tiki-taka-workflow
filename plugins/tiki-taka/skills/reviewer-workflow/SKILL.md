@@ -7,6 +7,12 @@ description: Shared process for every stack reviewer (be-reviewer, fe-web-review
 
 This is the process every reviewer agent follows regardless of stack. It says nothing about what to look for in the code — that's the agent's own persona and stack-specific standards. This skill is only the operational shell around the review.
 
+## 0. Context budget
+
+`Read` `context/context-budget.md` first and follow it for every command and file read in this review.
+The two things that blow a reviewer's budget are **test logs** and **whole-file reads** — both are
+handled explicitly below. Target 60k for the whole review pass.
+
 ## 1. Skill-loading discipline
 
 Skills are expensive to load and this agent runs on every review pass — be deliberate.
@@ -23,6 +29,12 @@ Skills are expensive to load and this agent runs on every review pass — be del
 
 The executor works TDD, so a test suite always exists. Run it (the project's test command; infer from the build/dependency file or project-context.md if unsure). Compare the result against the executor's reported **baseline** (the pre-existing failures it recorded before touching code).
 
+**Never let a full suite log into context — it is the single biggest waste in this workflow.** Run it
+so only the summary survives: `<test cmd> 2>&1 | tail -30`. That gives you pass/fail counts and the
+failing test names, which is all the gate needs. Only when a test is newly red do you re-run THAT test
+alone for its detail, and quote the shortest decisive lines (assertion + location) in your report — never
+paste a whole log or stack trace dump.
+
 - A test that is red but was ALREADY red in the baseline is inherited, not the executor's fault — do NOT fail the executor for it (note it as a pre-existing issue).
 - STOP with `STATUS: NEEDS_REVISION` only if a test is red that was green in the baseline (a NEW failure) — write those failing test names + output as the issue and do not proceed to code review.
 - If the executor gave no baseline (e.g. skipped it) and the suite is red, treat every failure as new.
@@ -31,7 +43,29 @@ Only when there are no new failures do you continue to the code review.
 
 ## 3. Review order
 
-Read the related task/TRD first — understand what is supposed to be done. Then review tests before implementation code: tests reveal intent and coverage. Check whether the tests actually verify the intended behavior, not just that they pass — a suite that's green but tests the wrong behavior, or omits required cases, is still an `Important` issue.
+Read the related task first — understand what is supposed to be done. Read the TRD only for the
+sections the task points at, not end to end: the task is the contract you review against, the TRD is
+reference material behind it.
+
+**Start from the DIFF, widen where it's blind.** `git diff --stat <base>...HEAD` for the shape, then
+`git diff <base>...HEAD -- <path>` per file. A diff shows what changed, not what the change BROKE — so
+widen in these cases rather than reviewing the hunk alone:
+
+- **A signature, exported symbol, schema, or shared constant changed** → check the call sites:
+  `rg -n <symbol>` across the repo. A caller the executor forgot to update never appears in the diff.
+  This is the single most common real bug a diff-only review misses.
+- **The diff is a large share of the file, or the file is new** → read the file; you are reviewing the
+  whole thing anyway.
+- **The hunk's correctness depends on state you cannot see** (what the rest of the class does, whether
+  a guard already exists above, how the function is invoked) → read the surrounding range, or the file
+  if it's small.
+- **Deleted code** → confirm nothing still references it (`rg -n`).
+
+Otherwise the hunk plus a few lines of context is enough. Read ranges (`offset`/`limit`) over whole
+files when the file is large. The point is not to read less than the review needs — it is to not read
+every touched file end to end out of habit.
+
+Then review tests before implementation code: tests reveal intent and coverage. Check whether the tests actually verify the intended behavior, not just that they pass — a suite that's green but tests the wrong behavior, or omits required cases, is still an `Important` issue.
 
 Compare the executor's work against the task and TRD explicitly.
 
