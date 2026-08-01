@@ -82,9 +82,11 @@ runnable. Keeping a completed agent visible in the UI is not an excuse to leave 
    a free worker slot exist.
 4. **Completion handling:** immediately remove the completed ID from `active`, update its lane, and
    enqueue its next job: executor success → reviewer; reviewer `NEEDS_REVISION` → same executor;
-   reviewer `CLEAN` → integration/Done. Then run the fill loop again **before** any commentary,
+   reviewer `CLEAN` → integration/Done. This completion handling and fill loop are the main agent's
+   **first action after observing any completion**; do not answer a status message first. Then run the
+   fill loop again before any commentary,
    status report, commit/push, or other work. A reviewer/revision has priority over a never-started
-   executor, but every remaining free slot is filled.
+   executor, but every remaining free slot is filled. Never wait for a user prompt to refill capacity.
 5. Integration and user-facing summaries are lower priority than runnable delegated work. They may
    use the main thread only after the fill loop has no job for a free worker slot. Continue until every
    lane is CLEAN or STOPPED; never introduce a global execute barrier or review barrier.

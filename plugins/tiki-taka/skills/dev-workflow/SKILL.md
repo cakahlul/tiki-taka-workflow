@@ -20,4 +20,8 @@ description: Run the complete Tiki-Taka PRD-to-ship development workflow in Code
    publication stages, commits, pushes, tracker updates, and final review summary exactly unless the
    user explicitly narrows the workflow.
 
+**Scheduler invariant:** after any delegated job completes, process that completion and refill every
+free worker slot from the reviewer/revision/task queue before commentary, status replies, integration,
+or unrelated work. Never wait for the user to notice or request reuse of an idle slot.
+
 Do not modify the Claude command or agent files while running this skill.

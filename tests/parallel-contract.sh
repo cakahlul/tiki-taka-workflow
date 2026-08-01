@@ -8,6 +8,9 @@ grep -q 'never silently degrade' "$ROOT/plugins/tiki-taka/context/codex-runtime.
 grep -q 'Fill loop:' "$ROOT/plugins/tiki-taka/context/codex-runtime.md"
 grep -q 'Completion handling:' "$ROOT/plugins/tiki-taka/context/codex-runtime.md"
 grep -q 'before any commentary' "$ROOT/plugins/tiki-taka/context/codex-runtime.md"
+grep -q 'first action after observing any completion' "$ROOT/plugins/tiki-taka/context/codex-runtime.md"
+grep -q 'Never wait for a user prompt to refill capacity' "$ROOT/plugins/tiki-taka/context/codex-runtime.md"
+grep -q 'Scheduler invariant' "$ROOT/plugins/tiki-taka/skills/dev-workflow/SKILL.md"
 
 for file in \
   "$ROOT/plugins/tiki-taka/context/codex-runtime.md" \
@@ -18,5 +21,5 @@ do
   grep -q 'LANE_WORKTREE' "$file"
 done
 
-grep -q '"version": "1.8.1"' "$ROOT/plugins/tiki-taka/.codex-plugin/plugin.json"
-grep -q '"version": "1.8.1"' "$ROOT/plugins/tiki-taka/.claude-plugin/plugin.json"
+grep -q '"version": "1.8.2"' "$ROOT/plugins/tiki-taka/.codex-plugin/plugin.json"
+grep -q '"version": "1.8.2"' "$ROOT/plugins/tiki-taka/.claude-plugin/plugin.json"
