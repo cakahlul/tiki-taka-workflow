@@ -67,26 +67,33 @@ the workflow intent but use the safe Codex behavior.
 
 ### Codex parallel scheduler
 
-For every canonical parallel stage, use an event-driven bounded worker pool:
+For every canonical parallel stage, the main agent MUST run this event loop until no lane is active or
+runnable. Keeping a completed agent visible in the UI is not an excuse to leave its replacement idle.
 
-1. Spawn independent agents back-to-back until every collaboration slot is occupied. Do not wait for
-   one spawned agent before spawning the next. On the common four-slot Codex runtime, the main agent
-   occupies one slot, leaving three workers; discover and use the actual available capacity rather
-   than assuming it is unlimited.
-2. Put overflow tasks in a runnable queue. A capacity limit changes only how many run simultaneously;
-   it MUST NOT turn the workflow into `executor -> reviewer -> next executor`.
-3. Wait for whichever agent finishes first. When an executor finishes, its reviewer becomes the
-   highest-priority runnable job and starts in the freed slot immediately. Other executors already in
-   flight keep running.
-4. A revision requested by a reviewer has the same lane priority. Resume that task's executor, then
-   review it again, without waiting for other lanes.
-5. Continue until every lane is CLEAN or stopped by its own safety limit. Never introduce a global
-   execute barrier or review barrier.
+1. Keep `runnable`, `active`, and per-task `laneState` in the main context. `active` is keyed by the
+   spawned agent ID; a lane is one of `EXECUTING`, `REVIEWING`, `REVISING`, `CLEAN`, or `STOPPED`.
+2. **Fill loop:** while a collaboration slot is free and `runnable` is non-empty, call `spawn_agent`
+   immediately, record its ID in `active`, and repeat. Do not wait for one spawned agent before
+   spawning the next. On the common four-slot Codex runtime, the main agent occupies one slot,
+   leaving three workers; discover and use the actual available capacity rather than assuming it is
+   unlimited.
+3. **Wait loop:** if `active` is non-empty, call `wait_agent` for the next completion event. Do not
+   return to the user, run unrelated tools, or start a long main-thread task while a runnable job and
+   a free worker slot exist.
+4. **Completion handling:** immediately remove the completed ID from `active`, update its lane, and
+   enqueue its next job: executor success → reviewer; reviewer `NEEDS_REVISION` → same executor;
+   reviewer `CLEAN` → integration/Done. Then run the fill loop again **before** any commentary,
+   status report, commit/push, or other work. A reviewer/revision has priority over a never-started
+   executor, but every remaining free slot is filled.
+5. Integration and user-facing summaries are lower priority than runnable delegated work. They may
+   use the main thread only after the fill loop has no job for a free worker slot. Continue until every
+   lane is CLEAN or STOPPED; never introduce a global execute barrier or review barrier.
 
 Claude's phrase "all calls in one message" maps to consecutive Codex `spawn_agent` calls before the
-first `wait_agent`, not to sequential local execution. If collaboration is unavailable or repeatedly
-refuses every spawn, stop and report that parallel execution is unavailable; never silently degrade a
-multi-task parallel stage to serial execution.
+first `wait_agent`, followed by the mandatory fill → wait → completion → fill loop above, not to
+sequential local execution. If collaboration is unavailable or repeatedly refuses every spawn, stop
+and report that parallel execution is unavailable; never silently degrade a multi-task parallel stage
+to serial execution.
 
 ### Parallel mutation isolation
 
