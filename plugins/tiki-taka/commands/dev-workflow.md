@@ -205,12 +205,21 @@ implements it per that same signature. Review both in parallel too; if reviewer 
 finds that A actually returns the field `amount` instead of `discount`, that becomes an issue in A to align to the
 contract — C does not need to change.
 
-Kick off ALL tasks at once, then let each run its own execute → review → revise chain. Independent and
-contracted tasks alike start together — but from there each task advances at its own pace, it does NOT
-wait at a shared round boundary.
+Make ALL tasks runnable at once, fill every runtime worker slot, and queue only the overflow caused by
+the runtime's hard capacity. Then let each run its own execute → review → revise chain. Independent
+and contracted tasks alike advance at their own pace; they do NOT wait at a shared round boundary.
 
-1. **Kick off — all executors in one message, in parallel**: CALL ALL ACTIVE-TASK EXECUTORS IN ONE
-   MESSAGE (`tiki-taka:be-executor` / `tiki-taka:fe-web-executor` / `tiki-taka:fe-mobile-executor`). Include the task
+**Isolate parallel mutations.** If parallel agents share a filesystem/git checkout, the orchestrator
+creates one temporary task branch + git worktree per task lane from the intended story branch. Pass
+that path as `LANE_WORKTREE` to both executor and reviewer. After CLEAN, commit in the lane and
+integrate into the story branch; only this short integration step is serialized. An integration
+conflict loops only that task back for resolution and re-review. Other lanes keep running. Never run
+parallel mutating executors in one shared checkout.
+
+1. **Kick off — fill all worker slots before waiting**: CALL ACTIVE-TASK EXECUTORS IN ONE PARALLEL
+   DISPATCH BATCH (`tiki-taka:be-executor` / `tiki-taka:fe-web-executor` / `tiki-taka:fe-mobile-executor`).
+   When tasks exceed runtime capacity, queue the overflow and start them as slots become available;
+   never wait for an executor-reviewer chain to finish while another worker slot could run a task. Include the task
    IN FULL and the dependency contract (if any) IN FULL — those are the contract the executor delivers
    against. For the TRD, pass its LOCATION plus the sections relevant to this task, not the whole
    document: the executor reads what it needs from there. At the start, if the task exists in an issue
@@ -234,7 +243,8 @@ wait at a shared round boundary.
    dependency task was ALREADY marked CLEAN when its contract deviation surfaces, reopen it: loop it back
    through its executor with the deviation as the issue, and re-review any already-CLEAN dependents whose
    correctness rested on the original contract.
-5. As soon as a task is `STATUS: CLEAN`, commit AND push it (see the Commit & Push section). Do not wait
+5. As soon as a task is `STATUS: CLEAN`, commit its isolated lane if applicable, integrate that commit
+   into the story branch, then push it (see the Commit & Push section). Do not wait
    for the other tasks to be CLEAN. Only after
    the task is committed and pushed, for each task that originated from an issue tracker (has an issue key/id) call the same-stack
    executor ONCE MORE with explicit confirmation `STATUS: CLEAN` + already committed & pushed —
@@ -261,9 +271,15 @@ wait at a shared round boundary.
 ### Commit & Push
 
 - Commit is done per task, not in bulk for many tasks at once.
+- For an isolated lane, commit on its temporary task branch, integrate that commit into the story
+  branch, run the task's verification against the integrated branch, then push the story branch.
+  Integration is a short per-repository critical section; executors and reviewers in other worktrees
+  keep running.
 - The commit message must reference the related task/ticket (e.g. the JIRA number if any) and its phase (e.g. "Phase 1/MVP").
 - A commit is only done after that task has status CLEAN from the relevant reviewer.
-- **Push to the story branch** after committing: `git push` the task's commits to its story branch (the branch the executors created in Branch setup, named after the story ticket number). If the branch has no upstream yet, `git push -u origin <story-branch>`.
+- **Push to the story branch** after committing/integrating: `git push` the task's commits to the
+  story branch prepared during lane setup (named after the story ticket number). If the branch has no
+  upstream yet, `git push -u origin <story-branch>`.
 - **After pushing, present a review summary to the user** so they can review the work: for each task pushed, describe in detail what changed and highlight the key code — the story branch name, files touched, the notable functions/components/endpoints added or changed (with `file:line` references and short code excerpts for the important parts), and anything the user should pay attention to when reviewing. This is a user-facing walkthrough — write it in full, not compressed.
 
 ### General principles

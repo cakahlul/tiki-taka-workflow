@@ -48,7 +48,8 @@ the workflow intent but use the safe Codex behavior.
 - A request to call `tiki-taka:<agent>` means:
   1. Read `PLUGIN_ROOT/agents/<agent>.md` completely.
   2. Translate its Claude tool names using the mapping below.
-  3. Delegate it to a Codex subagent when collaboration is available and parallelism is useful.
+  3. Delegate it to a Codex subagent when collaboration is available. For a canonical parallel stage,
+     delegation is mandatory rather than discretionary.
   4. Otherwise execute the role locally with the same isolation and output contract.
 - The workflow skill explicitly authorizes bounded subagent delegation required by its canonical
   workflow. Do not delegate unrelated work.
@@ -63,6 +64,42 @@ the workflow intent but use the safe Codex behavior.
   full conversation fork and its token cost.
 - Parallelize only stages the canonical command marks independent. Preserve all dependency and
   reviewer barriers.
+
+### Codex parallel scheduler
+
+For every canonical parallel stage, use an event-driven bounded worker pool:
+
+1. Spawn independent agents back-to-back until every collaboration slot is occupied. Do not wait for
+   one spawned agent before spawning the next. On the common four-slot Codex runtime, the main agent
+   occupies one slot, leaving three workers; discover and use the actual available capacity rather
+   than assuming it is unlimited.
+2. Put overflow tasks in a runnable queue. A capacity limit changes only how many run simultaneously;
+   it MUST NOT turn the workflow into `executor -> reviewer -> next executor`.
+3. Wait for whichever agent finishes first. When an executor finishes, its reviewer becomes the
+   highest-priority runnable job and starts in the freed slot immediately. Other executors already in
+   flight keep running.
+4. A revision requested by a reviewer has the same lane priority. Resume that task's executor, then
+   review it again, without waiting for other lanes.
+5. Continue until every lane is CLEAN or stopped by its own safety limit. Never introduce a global
+   execute barrier or review barrier.
+
+Claude's phrase "all calls in one message" maps to consecutive Codex `spawn_agent` calls before the
+first `wait_agent`, not to sequential local execution. If collaboration is unavailable or repeatedly
+refuses every spawn, stop and report that parallel execution is unavailable; never silently degrade a
+multi-task parallel stage to serial execution.
+
+### Parallel mutation isolation
+
+Codex agents share a filesystem and git checkout. Before dispatching parallel mutating tasks in the
+same repository, the main agent MUST give every task lane its own git worktree and temporary task
+branch, created from the intended story branch. Pass that path as `LANE_WORKTREE` to the executor and
+reviewer. They operate only there and never checkout another branch.
+
+After a lane is CLEAN, commit in its worktree and integrate that commit into the story branch. This
+short integration step may be serialized, but it MUST NOT pause executors or reviewers in other
+worktrees. If integration conflicts, return only that lane to its executor against the latest story
+branch and re-review the affected diff. Remove the temporary worktree/branch only after successful
+integration and push. Never run parallel mutating agents in one shared checkout.
 
 ## Context budget
 

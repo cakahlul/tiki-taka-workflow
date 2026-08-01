@@ -7,6 +7,10 @@ description: Shared process for every stack reviewer (be-reviewer, fe-web-review
 
 This is the process every reviewer agent follows regardless of stack. It says nothing about what to look for in the code — that's the agent's own persona and stack-specific standards. This skill is only the operational shell around the review.
 
+If the main orchestrator supplies `LANE_WORKTREE`, change to that exact path before reading the diff
+or running tests, verify it is the task's isolated git worktree, and remain there for the whole review.
+Never review the shared/root checkout for an isolated lane.
+
 ## 0. Context budget
 
 `Read` `context/context-budget.md` first and follow it for every command and file read in this review.

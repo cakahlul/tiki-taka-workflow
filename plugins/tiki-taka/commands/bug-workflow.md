@@ -77,7 +77,8 @@ When there is a bug/issue report, follow this flow in order.
    - **Single-location case** (bug-analyst output is plain text, not JSON): directly call one
      executor for the relevant stack, nothing to parallelize.
    - **>1-location case** (bug-analyst outputs a JSON block `localId`/`dependsOnLocalIds`/`contract`):
-     CALL ALL STACK EXECUTORS FOR EACH ITEM IN ONE MESSAGE, IN PARALLEL — including items that
+     make every item runnable immediately, fill every runtime worker slot before waiting, and queue
+     only overflow caused by the runtime capacity. CALL STACK EXECUTORS IN PARALLEL — including items that
      depend on one another (`dependsOnLocalIds` is non-empty). Each executor works against the `contract`
      that bug-analyst has already written, DO NOT wait for the actual result of its dependency item to finish
      first. The same-stack/same-service rule from the Development Workflow also applies: two items that
@@ -85,6 +86,9 @@ When there is a bug/issue report, follow this flow in order.
    - Each item (independent or contracted) runs the executor-reviewer loop in parallel with one
      another — follow the same loop as the Development Workflow (revise until `STATUS: CLEAN`,
      limit of 5 iterations per item).
+   - Apply the Development Workflow's parallel mutation isolation: one temporary task branch + git
+     worktree per item when agents share a checkout. Executor and reviewer stay in that lane; CLEAN
+     integration is short and serialized while all other lanes keep running.
    - If the executor finds the `contract` from bug-analyst insufficient/ambiguous during implementation, report it
      as an issue (not silently changing it) — the reviewer flags the dependency item that deviates from the
      contract as `NEEDS_REVISION`, not the dependent item that already matches the initial contract.

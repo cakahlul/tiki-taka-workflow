@@ -48,11 +48,19 @@ Before starting, check whether `.claude/knowledge/review-lessons.md` exists at t
 
 Branch = the **Story ticket number** (one branch per story, shared by its tasks). Story key: parent Story key if this task has one (epic→story→subtask), else the task's own key (flat grouping / local `.md`).
 
-- Checkout the repo default (`main`/`master`, via `git remote show origin`), pull.
-- If the story branch already exists (local or origin), checkout + pull it; else create it off default.
-- Do this BEFORE any code.
+If the main orchestrator supplies `LANE_WORKTREE`, change to that exact path, verify it is a git
+worktree created for this task, and skip the checkout/pull steps below. Stay in this worktree for the
+executor pass and every revision. The orchestrator owns integration into the story branch; never
+checkout another branch or edit the shared/root checkout from an isolated lane.
 
-On a revision pass (after the reviewer returns `NEEDS_REVISION`) you are already on the story branch — stay, do not re-branch or touch default.
+- Without `LANE_WORKTREE`, checkout the repo default (`main`/`master`, via `git remote show origin`), pull.
+- Without `LANE_WORKTREE`, if the story branch already exists (local or origin), checkout + pull it;
+  else create it off default.
+- Do this BEFORE any code. A multi-task parallel stage MUST supply isolated worktrees; the shared
+  checkout path is only valid for a single mutating lane.
+
+On a revision pass (after the reviewer returns `NEEDS_REVISION`) stay in `LANE_WORKTREE` when supplied;
+otherwise you are already on the story branch. Do not re-branch or touch default.
 
 ## 3. Baseline test snapshot — first pass only, right after branch setup, before touching code
 
