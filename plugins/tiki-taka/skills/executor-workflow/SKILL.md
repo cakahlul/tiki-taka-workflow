@@ -97,6 +97,12 @@ These three apply to every stack, on top of whatever stack-specific triggers the
 - **Multi-file / lots of code at once / task too big for one go** → call `incremental-implementation` first (thin vertical slice: implement one piece, test, verify, commit, next). Skip for a truly minimal single-file change.
 - **Implements logic / fixes a bug / changes behavior** → call `test-driven-development` first (RED-GREEN-REFACTOR: failing test first, then code; bug fix = Prove-It, reproduce with a failing test before fixing). Skip only for pure config/docs/static-asset changes with no behavioral impact.
 - **Unexpected error during work** (failing test, broken build, runtime error/crash, behavior mismatch) → STOP adding features, call `debugging-and-error-recovery` first (reproduce, localize, reduce, fix root cause not symptom, guard with a regression test, verify). Don't guess a fix without reproducing.
+- **Sensitive path** → call `security-and-hardening` before you finish, when a file you are creating or
+  editing matches: `auth`, `token`, `session`, `password`, `pin`, `otp`, `kyc`, `kyb`, `transfer`,
+  `payment`, `biller`, `balance`, `saldo`, `mutasi`, `limit`, `approval`, `beneficiary`, `rekening`,
+  `account`, `loan`, `slik`, `brankas`, `rbac`, `permission`, `role`. This one is not a judgement call
+  and it survives §5's revision rule: if your revision touches such a file, apply it again on that pass.
+  Cheaper here than as a reviewer `NEEDS_REVISION` round-trip.
 
 ## 6. Tracker status update
 

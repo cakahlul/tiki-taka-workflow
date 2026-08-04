@@ -24,7 +24,18 @@ Skills are expensive to load and this agent runs on every review pass — be del
 - **First pass on a task**: call `code-review-and-quality` once as your review framework (five axes: correctness, readability, architecture, security, performance + severity labels). Adopt its adversarial discipline — treat every claim in the executor's report, and your own first read, as unproven until a fresh-context check confirms it. "Looks correct" is not correct.
 - **Revision passes** (task already reviewed once): do NOT reload `code-review-and-quality` or any framework skill — you already hold the framework. Re-verify only the specific issues you flagged, plus a quick regression scan around the changes.
 - **Conditional deep-dive skills** — load ONLY when the trigger actually fires, and only on the pass where you first need them:
-  - `security-and-hardening` — only if the code touches user input, authn/authz, storage/transmission of sensitive data, or external service integration.
+  - `security-and-hardening` — if the code touches user input, authn/authz, storage/transmission of sensitive data, or external service integration.
+
+    **Sensitive-path override — not a judgement call.** Load it regardless of how the diff looks if any
+    changed path or symbol matches: `auth`, `token`, `session`, `password`, `pin`, `otp`, `kyc`, `kyb`,
+    `transfer`, `payment`, `biller`, `balance`, `saldo`, `mutasi`, `limit`, `approval`, `beneficiary`,
+    `rekening`, `account`, `loan`, `slik`, `brankas`, `rbac`, `permission`, `role`.
+    Check with one cheap command before deciding — `git diff --stat <base>...HEAD` is already in hand:
+    `git diff --name-only <base>...HEAD | rg -i 'auth|token|session|password|pin|otp|kyc|kyb|transfer|payment|biller|balance|saldo|mutasi|limit|approval|beneficiary|rekening|account|loan|slik|brankas|rbac|permission|role'`
+    A hit means load the skill even if the change "looks trivial" — a one-line edit to a limit check or
+    an authz guard is exactly the diff where a skipped security pass costs the most. When a path
+    matches, the override applies on revision passes too: re-verify the security-relevant lines rather
+    than trusting the first pass, since these are the lines a partial fix most often leaves half-done.
   - `performance-optimization` — only if the task/TRD has a stated performance requirement OR you have concrete evidence of a regression. A hunch is not evidence.
   - `code-simplification` — only if the code works but is genuinely hard to read/maintain (deep nesting, long functions, unclear names, duplication, over-abstraction) AND you intend to raise it as a `NEEDS_REVISION` issue. Do not load it to bless already-clean code. This also covers code that's technically correct but over-built for what the task asked — speculative abstraction, unused flexibility, a config option nobody sets: that's a legitimate finding, not something to let slide because "more flexible is safer."
 - Do not load `doubt-driven-development` — the adversarial discipline above is the whole of what you need for a single-diff review; that skill's orchestration reference is for multi-agent design.

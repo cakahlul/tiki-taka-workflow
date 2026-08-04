@@ -53,9 +53,17 @@ the workflow intent but use the safe Codex behavior.
   4. Otherwise execute the role locally with the same isolation and output contract.
 - The workflow skill explicitly authorizes bounded subagent delegation required by its canonical
   workflow. Do not delegate unrelated work.
-- When spawning a role, pass `RUNTIME=codex`, `MODEL_TIER`, the resolved model and reasoning effort,
-  role instructions, relevant workspace config, exact inputs, expected output, repository path, and
-  whether it may mutate files. Never assume a spawned agent has read the plugin resources.
+- When spawning a role, pass `RUNTIME=codex`, the **already-resolved** model and reasoning effort,
+  role instructions, exact inputs, expected output, repository path, and whether it may mutate files.
+  Never assume a spawned agent has read the plugin resources.
+- **The worker's runtime contract is `PLUGIN_ROOT/context/codex-agent-prelude.md` — that file and
+  nothing more.** It carries paths, tool mapping, context budget, comms, and mutation safety in the
+  form a worker actually needs. Do NOT also pass this file (`codex-runtime.md`), `context-budget.md`,
+  `comms-style.md`, or `model-policy.md` to a spawned role: since `fork_turns: none` prompts are
+  self-contained, every one of those is re-paid on every spawn, and their main-thread content
+  (scheduler, tier tables, worktree setup) is content a worker never acts on.
+- **Do not pass `model-policy.md` to a worker.** Tier resolution is the main thread's decision. Send
+  the *outcome* (`model=<x>, reasoning_effort=<y>`), not the table used to derive it.
 - Pass **locations, not payloads**: give the spawned role a document's path/URL plus the sections it
   needs, not the whole document pasted into the prompt. Since `fork_turns: none` prompts are
   self-contained, anything pasted is paid for by every role you paste it into. Revision spawns carry
@@ -70,8 +78,15 @@ the workflow intent but use the safe Codex behavior.
 For every canonical parallel stage, the main agent MUST run this event loop until no lane is active or
 runnable. Keeping a completed agent visible in the UI is not an excuse to leave its replacement idle.
 
-1. Keep `runnable`, `active`, and per-task `laneState` in the main context. `active` is keyed by the
-   spawned agent ID; a lane is one of `EXECUTING`, `REVIEWING`, `REVISING`, `CLEAN`, or `STOPPED`.
+1. Keep lane state in a FILE, not in the main context: `WORKSPACE_ROOT/.tiki-taka/scratch/lanes.json`,
+   one record per task — `{task, stack, lane, agentId, passes}` where `lane` is one of `EXECUTING`,
+   `REVIEWING`, `REVISING`, `CLEAN`, `STOPPED`. Read and update it with `jq` (write to a temp file and
+   move it over, so a partial write cannot corrupt the ledger).
+
+   Re-derive the queue from that file at each event instead of restating the whole board in context —
+   in a long parallel run, narrating every lane transition costs more than the orchestration itself,
+   and it can never be evicted. Keep in your head only what the next action needs: which slots are
+   free, and which task the completion you just observed belongs to.
 2. **Fill loop:** while a collaboration slot is free and `runnable` is non-empty, call `spawn_agent`
    immediately, record its ID in `active`, and repeat. Do not wait for one spawned agent before
    spawning the next. On the common four-slot Codex runtime, the main agent occupies one slot,
@@ -112,8 +127,10 @@ integration and push. Never run parallel mutating agents in one shared checkout.
 
 ## Context budget
 
-- `PLUGIN_ROOT/context/context-budget.md` applies on Codex exactly as written. Read it before the first
-  delegated agent and pass it to every spawned role — a Codex agent does not inherit the parent's reads.
+- A Codex agent does not inherit the parent's reads, so anything a role needs must be in its own prompt
+  — which is exactly why it must be the SHORT version. Spawned roles get
+  `PLUGIN_ROOT/context/codex-agent-prelude.md` (budget rules included). The main thread reads the full
+  `context-budget.md` once for its own orchestration reads; it does not forward it to workers.
 - The `tools:` and `disallowedTools:` frontmatter in `agents/*.md` is a Claude Code availability
   mechanism. On Codex it is not enforced by the runtime, so treat each agent's `tools:` line as the
   **declared capability set for that role**: give a spawned role access to those capabilities and no

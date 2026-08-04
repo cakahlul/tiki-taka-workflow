@@ -112,12 +112,15 @@ If there is a requirement that is odd/unreasonable in this area, you MUST ask th
    phases (Phase 1: MVP, Phase 2, etc.), based on BOTH results from #1 — the prd-analyst analysis AND the
    project-scout project knowledge, so slicing reflects the actual technical condition, not assumptions. If there is a requirement that is ambiguous
    whether it belongs in the MVP or not, ask the user first.
-2b. **Effort estimation (always).** Call the subagent `tiki-taka:em` in `estimate` mode after prd-slicer —
-   whether or not the PRD asked for one; a Development & Testing estimate makes every planning report
-   clearer. It reads the scratch (`prd-analysis.md`, `rollout-plan.md`, `project-context.md`), produces
-   per-story Dev + Test effort grounded in the actual project condition, rolls it up per phase, and writes
+2b. **Effort estimation (on demand).** Call the subagent `tiki-taka:em` in `estimate` mode after
+   prd-slicer **when the estimate will actually be used** — the PRD or user asks for one, the work spans
+   more than one phase, or someone needs to schedule/staff it. Skip it for a single-phase feature nobody
+   asked to estimate: it is a full extra agent run whose output no one reads. When called, it reads the
+   scratch (`prd-analysis.md`, `rollout-plan.md`, `project-context.md`), produces per-story Dev + Test
+   effort grounded in the actual project condition, rolls it up per phase, and writes
    `.tiki-taka/scratch/effort-estimation.md` for technical-writer to publish into the Rollout Plan
-   (Stage B). Relay any of its `AskUserQuestion` scoping questions to the user and wait.
+   (Stage B). Relay any of its `AskUserQuestion` scoping questions to the user and wait. If you skip it,
+   say so in the planning summary so the user can ask for it explicitly.
 3. Call the subagent `tiki-taka:trd-writer` to create the TRD **specifically for the currently active phase** (starting from
    Phase 1/MVP), based on the results of prd-slicer and project-scout from #1-#2. Project-scout does NOT
    need to be called again at this point — the result from #1 is sufficient unless there has been a significant change in project
