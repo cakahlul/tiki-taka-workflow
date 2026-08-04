@@ -151,7 +151,26 @@ fully described — either:
 - a very small task (1 file, minor fix, no ambiguous requirement) the user asks to jump ahead on
   (confirm explicitly first — do not skip unilaterally); or
 - **gap-tasks emitted by `/tiki-taka:em-review`** — each already carries title, description, stack, and
-  acceptance criteria (task-breaker format), so there is nothing left to plan.
+  acceptance criteria (task-breaker format), so there is nothing left to plan; or
+- **a named subset of an already-published task list** — the user points at a published `tasks.md` (or
+  tracker board) and names which tasks to run this time: an epic, a story, a task-id range, or an
+  explicit list. Planning already happened, so there is nothing to re-plan.
+
+**Batch mode (running a published list a few tasks at a time).** A large phase does not have to run in
+one dispatch. Running it in batches is often the ONLY way it fits: a 30-task phase in a single run
+costs far more context than a session holds, so it compacts repeatedly and re-pays for the same
+material. Prefer batches when the active phase has more than ~6 tasks.
+
+- Read ONLY the named tasks out of the published list, plus the TRD sections those tasks point at. Do
+  not read the whole task list or the whole TRD end to end.
+- **Respect dependencies across batch boundaries.** A task whose `Dependencies:` name a task from an
+  EARLIER batch is fine — that work is already merged; treat its published `Contract:` as given and do
+  not re-open it. A task depending on a LATER batch is a batch-ordering mistake: say so and propose
+  moving it rather than silently stubbing the dependency.
+- Contracts still apply WITHIN a batch, per the dependent-task rules below.
+- After the batch, report which task-ids went CLEAN + committed and which remain, so the next batch
+  starts from a known point. Do NOT flip the phase to `DONE` until every task in the phase is done —
+  a finished batch is not a finished phase.
 
 When entering execution-only:
 - Skip steps 1–6 of Planning entirely. There is no scratch, so `technical-writer`'s `assemble` mode is
