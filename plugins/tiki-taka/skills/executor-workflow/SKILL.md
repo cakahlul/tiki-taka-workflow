@@ -49,6 +49,14 @@ RED-GREEN-REFACTOR cycle. So this applies to **every** invocation, in step 3 and
 - **Run the narrowest scope that answers your question.** During a TDD cycle you care about the test you
   just wrote — run THAT test/file (`jest path/to/file`, `go test ./pkg/...`, `pytest path::test`), not
   the whole suite. Full suite belongs at the baseline and once before you report, not on every cycle.
+  In a monorepo, that includes typecheck/lint too — use the package filter (`turbo run typecheck
+  --filter=<pkg>`, `nx test <project>`, `pnpm --filter <pkg> tsc --noEmit`), not the root-level command,
+  until the final pre-report check. A root-level typecheck/test in a large monorepo routinely takes
+  30-130s; running it on every cycle instead of the touched package is the single biggest time sink
+  measured in this workflow.
+- **Skip a re-run if nothing changed since the last run of that exact command.** Check `git diff --stat`
+  (or your own memory of what you last edited) before firing a test/typecheck/lint command again — if no
+  file in its scope changed, the result is identical to last time.
 - **On failure, get detail from the one failing test**, re-run alone. Don't re-run everything to see it.
 
 ### 0b. Environment failures are NOT your task — stop early
