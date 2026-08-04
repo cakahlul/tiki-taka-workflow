@@ -38,6 +38,10 @@ the workflow intent but use the safe Codex behavior.
   structured input tool is available, ask one concise plain-text question and wait.
 - Preserve the canonical command's setup gates, sequencing, Q&A log, review barriers, stop
   conditions, and user-visible summaries.
+- **Planning Complete Report gate is non-negotiable on Codex too.** After Planning step 6, present the
+  report and ask Proceed/Revise before spawning any executor. Never treat an eager user or an
+  obviously-ready task list as license to skip the question — the gate exists specifically to require
+  an explicit answer.
 
 ## Agents and parallel work
 

@@ -1,5 +1,5 @@
 ---
-description: Run the Development Workflow (Planning Phase → per-task execute-review-revise pipeline Execution → Commit). PRD analysis, slicing, TRD, task breakdown, then parallel per-task execution — each task flows through review and commit on its own without waiting at a shared barrier.
+description: Run the Development Workflow (Planning Phase → Planning Complete Report + feedback gate → per-task execute-review-revise pipeline Execution → Commit). PRD analysis, slicing, TRD, task breakdown, then a mandatory user confirmation gate before parallel per-task execution — each task flows through review and commit on its own without waiting at a shared barrier.
 ---
 
 # Development Workflow
@@ -143,6 +143,55 @@ ask one), append a VERBATIM row `# | Asked by | Category | Question | User answe
 `substantive` (requirements/scope/flow/design/slicing/board) or `operational` (e.g. PRD/tracker
 location). Record EVERY question, both categories. technical-writer publishes this as section 3 in Stage B.
 
+### Planning Complete Report + feedback gate (MANDATORY, blocks Execution)
+
+Planning is not done at step 6. After `technical-writer` Stage B publishes, before touching Execution,
+report to the user and wait for their decision:
+
+7. Present a **Planning Complete Report**, full prose, covering:
+   - **Rollout plan**: each phase (Phase 1/MVP, Phase 2, …) with a one-line scope summary and which
+     phase is active.
+   - **Epics/Stories**: the epics or parent stories task-breaker grouped tasks under, for the active phase.
+   - **Tasks**: count per stack (Backend/FE Web/FE Mobile) for the active phase, and the published
+     locations (TRD, tasks, Analysis & Rollout Plan) from steps 4–6.
+   - **Effort estimate**, if step 2b ran (or note that it was skipped).
+   - **Open questions**, if any were asked but answers still feel soft/assumption-based — call them out
+     explicitly rather than let them ride silently into Execution.
+8. Call `AskUserQuestion` asking whether to proceed: options are **Proceed to Execution** (accept the
+   rollout plan, epics, tasks, and phase as-is) and **Revise** (give feedback on any of rollout
+   plan/epic/task/phase). Do not skip this call — it is the gate, not a courtesy.
+   - **Proceed** → continue to the Execution Phase below.
+   - **Revise** → take the feedback, route it to whichever Planning agent owns that artifact
+     (prd-slicer for rollout plan/phase split, task-breaker for task breakdown, trd-writer for TRD
+     content, technical-writer to republish after any of the above change), append the feedback and
+     resolution to `qa-log.md`, then re-present an updated Planning Complete Report and ask again. Loop
+     until the user picks Proceed.
+9. **When the user picks Proceed, ask the execution mode in the SAME gate turn** (a second
+   `AskUserQuestion`, or a second question in the same call) — Parallel or Economy. Explain both so the
+   choice is informed, not just labeled:
+   - **Parallel (default)**: every task in the active phase gets its own worktree lane and runs its
+     execute → review → revise chain concurrently. Pro: fastest wall-clock — the ball never stops on
+     the slowest task, and a stuck task doesn't block the rest. Con: costs roughly **2x the tokens** of
+     sequential for the same batch, because each lane's subagent re-pays for context (TRD sections,
+     conventions) that a shared sequential run would only pay once. Best when time-to-ship matters more
+     than total token spend, or the phase has few enough tasks that the multiplier is small in absolute
+     terms.
+   - **Economy (`tiki-taka:economy-mode`)**: sequential lanes, shared context read once as a batch
+     digest, review scaled to risk. Pro: lowest total token cost. Con: strictly slower wall-clock — one
+     task finishes before the next starts, and a stuck task blocks the ones behind it in the lane.
+     Best when the batch is large or the user has said cost matters more than speed.
+   - Skip asking only when the user already stated a preference for this run (in the original request or
+     earlier in this conversation) — otherwise ask every time, regardless of batch size. Never silently
+     default to parallel.
+   - Record the answer; it governs the whole Execution Phase below (see "Execution mode: parallel
+     (default) or economy").
+10. **Do not start the Execution Phase — do not call any executor — until the user has explicitly chosen
+    Proceed and an execution mode on this gate.** This applies even if the user seems eager or the tasks
+    look obviously ready; the gate exists precisely so Execution never starts on an unconfirmed plan.
+
+This gate does NOT apply to the Execution-only entry point below — those tasks skip Planning entirely,
+so there is no Planning Complete Report to gate on.
+
 ### Execution-only entry point (skip Planning)
 
 Enter the workflow straight at the Execution Phase, skipping all of Planning, when the tasks are ALREADY
@@ -190,13 +239,16 @@ tiki-taka principle, and it costs tokens: every subagent has its own context, so
 both need is paid for once per lane. Parallel execution of the same batch typically costs on the order
 of twice the tokens of running it sequentially. This is structural, not a defect to tune away.
 
-**When the user asks for the cheap / economy / sequential mode, or says total token cost matters more
-than speed, call the skill `tiki-taka:economy-mode` and follow it instead of the parallel dispatch
-rules below.** Everything else in this command still applies: worktree discipline, contracts, the
-CLEAN → commit → push → Done order, phase status, and the safety limits.
+**Mode is decided at the Planning Complete Report gate** (step 9 above), asked alongside Proceed/Revise
+before this phase starts — not re-asked here. For the Execution-only entry point (no Planning gate ran),
+ask it once at the start of Execution instead, using the same Parallel-vs-Economy explanation from the
+gate.
 
-If the user has not said which they want and the batch is large enough for the difference to matter,
-ask once — do not silently pick. Never claim parallel execution can match sequential total cost.
+**When the answer is economy, call the skill `tiki-taka:economy-mode` and follow it instead of the
+parallel dispatch rules below.** Everything else in this command still applies: worktree discipline,
+contracts, the CLEAN → commit → push → Done order, phase status, and the safety limits.
+
+Never claim parallel execution can match sequential total cost.
 
 ### Execution Phase (PER-TASK PIPELINE: each task flows execute → review → revise on its own, no global barrier)
 
