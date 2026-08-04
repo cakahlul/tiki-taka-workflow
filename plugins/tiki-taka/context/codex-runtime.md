@@ -119,6 +119,19 @@ same repository, the main agent MUST give every task lane its own git worktree a
 branch, created from the intended story branch. Pass that path as `LANE_WORKTREE` to the executor and
 reviewer. They operate only there and never checkout another branch.
 
+**Location is fixed: `<repo-root>/.worktrees/<task-id>/`** via
+`git worktree add <repo-root>/.worktrees/<task-id> -b <task-branch> <story-branch>`. Never place a lane
+worktree in `/tmp` or any scratch directory outside the repo: it makes every lane's paths unique, so
+identical files read in different lanes can never be reused, and it detaches the worktree from the
+repo's git dir. If that path cannot be created, STOP and report — never fall back to a temp directory.
+
+Always isolate: one worktree per task lane, including a single-task batch. A fresh worktree has no
+installed dependencies — reuse the main checkout's (symlink `node_modules`, or install `--offline` from
+a warm cache) rather than a full install per lane, and verify the lane can build before dispatching.
+Tell the user each lane's path so they can inspect it, integrate + push promptly so finished work is
+visible in the normal checkout, and `git worktree remove` the lane once its commit is integrated and
+pushed — a stale registered worktree keeps its branch locked.
+
 After a lane is CLEAN, commit in its worktree and integrate that commit into the story branch. This
 short integration step may be serialized, but it MUST NOT pause executors or reviewers in other
 worktrees. If integration conflicts, return only that lane to its executor against the latest story

@@ -29,3 +29,19 @@ Call `executor-workflow` first and follow it end to end — it covers review-les
 2. Framework/library-version-specific code needing authoritative, source-cited patterns → call `source-driven-development` first (detect version from the dependency file, fetch official docs for that version, implement per docs, cite). Skip for version-independent logic (loops, conditions, rename/typo).
 
 **Before reporting done, run the full test suite and make sure it is green.** No manual browser verification — tests are the source of truth; if a behavior is hard to assert, extend the test setup rather than clicking manually. Do not mark your own work as clean — that is fe-web-reviewer's decision.
+
+**Pick the cheapest test level that actually proves the behavior.** "Tests are the source of truth" does
+not mean reaching for a browser runner. Most UI requirements — including ones a task words as
+"accessibility" or "a11y" — are provable in jsdom:
+
+- Keyboard nav, focus management, ARIA/roles, labels, loading/empty/error states → component tests
+  (testing-library). No browser.
+- Automated a11y assertions → `jest-axe` / `vitest-axe` in jsdom. No browser.
+- **Real-browser runners (Playwright/Cypress) only for what genuinely cannot run in jsdom**: visual
+  regression/screenshots, real layout and scroll geometry, cross-browser behavior.
+
+If a task's acceptance criteria name a browser-only check and its runner does not work in this lane,
+that is an environment blocker — report it per `executor-workflow` §0b/§0c and obey the retry ceilings.
+Do NOT dig through `node_modules`/`.pnpm` to make a runner work, and do NOT install browser binaries on
+your own initiative. Cover what you can at the jsdom level, state plainly which criterion is
+unverified and why, and let the reviewer weigh it. A browser runner nobody can run is not coverage.

@@ -12,6 +12,32 @@ This is the process every executor agent follows regardless of stack. It says no
 `Read` `context/context-budget.md` first and follow it for every command and file read in this pass.
 Target 60k for the whole pass.
 
+### 0-A. File reads — the #1 cost in this workflow, measured
+
+Reading files is where an executor pass actually spends its context — more than tests, more than
+instructions, more than tracker calls. Two habits cause almost all of it. Both are banned here.
+
+**Never read the same file twice in one pass.** Keep a mental list of what you have already opened.
+A re-read is almost always a lookup ("what was that field called again?"), and a lookup does not need
+the file:
+
+- Need one symbol/line → `rg -n '<symbol>' <file>` (a few dozen tokens, not a few thousand).
+- Need a spot you saw before → `Read` with `offset`/`limit` around it, never the whole file again.
+- After you `Edit` a file, you already know what it now says — do NOT re-read to confirm the edit
+  landed. `Edit` fails loudly if it does not apply.
+
+If you genuinely must revisit a large file a third time, that is a signal to work from a short note
+you write once, not to keep re-opening it.
+
+**Read ranges, not whole files, for anything big.** Before opening a file you have not seen, get its
+size: `wc -l <file>`. Over ~300 lines, do not open it whole — locate first (`rg -n`), then read the
+range you need with `offset`/`limit`. Whole-file reads are for small files and files you are about to
+rewrite end to end.
+
+Barrel/index files (`index.ts`, `mod.rs`, `__init__.py`) and long integration-test files are the
+worst offenders: they are large, they are re-opened constantly, and you almost never need all of them.
+`rg -n` the export or test name instead.
+
 ### 0a. EVERY test/build/lint run, not just the baseline
 
 You run tests far more often than anyone else in this workflow — TDD alone re-runs them on every
@@ -39,6 +65,30 @@ tried, and state plainly that it is a pre-existing environment problem, not a re
 Then continue with whatever verification IS available (typecheck, lint, a scoped test that does run) and
 say which you used. `debugging-and-error-recovery` is for failures in the code you are writing, not for
 a broken environment.
+
+### 0c. Hard retry ceilings — count, do not judge
+
+"Try a bit longer" is the most expensive failure mode in this workflow: measured runs have burned
+200k+ context on one task by re-running the same failing command dozens of times. A tweaked flag, a
+different path, or a reinstall is still the SAME attempt at the same target. Count attempts and obey
+these ceilings literally:
+
+- **Same command (any variation) fails 3 times → STOP running it.** Not a 4th attempt.
+- **Same test/build target still failing after 3 attempts → STOP that target**, even if each failure
+  had a different-looking cause. Report it.
+- **A tool/runner that has never once succeeded in this pass** (e.g. the E2E runner, the visual-test
+  runner) → **2 attempts, then treat it as unavailable** and say so. Never keep probing a runner that
+  has not produced a single green run.
+- **Same file edited more than 4 times** → you are guessing. Stop, re-read the actual error, and
+  either fix it from evidence or report it.
+
+On hitting any ceiling: STOP that thread of work. Do NOT reinstall dependencies, hunt through
+`node_modules`, clear caches, or try another flag combination — those are the classic symptoms of an
+environment problem you were told above not to debug. Finish what you CAN verify, then report:
+what you attempted (with the count), the shortest decisive error line, and what remains unverified.
+
+**A partial pass reported honestly is a success. A complete-looking pass produced by grinding is not.**
+Reaching a ceiling is expected and is never a reason to hide the gap or to keep going quietly.
 
 ## 1. Review lessons check
 

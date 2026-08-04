@@ -238,6 +238,60 @@ integrate into the story branch; only this short integration step is serialized.
 conflict loops only that task back for resolution and re-review. Other lanes keep running. Never run
 parallel mutating executors in one shared checkout.
 
+**Worktree location is fixed: `<repo-root>/.worktrees/<task-id>/`.** Create it with
+`git worktree add <repo-root>/.worktrees/<task-id> -b <task-branch> <story-branch>`.
+
+- **Never put a lane worktree in the session scratchpad, `/tmp`, or any path outside the repo.** The
+  scratchpad is for throwaway notes, not repo checkouts. An out-of-repo checkout gives every lane a
+  session-unique absolute path, so identical files read in different lanes are treated as different
+  files and none of the reads can be reused across the run — it is one of the largest avoidable costs
+  in the whole workflow. It also detaches the worktree from the repo's git dir on cleanup.
+- Do NOT invent a location when this file's path does not seem to apply — use the path above. If it
+  cannot be created (permissions, existing dir, `.worktrees` ignored by tooling), STOP and report;
+  do not silently fall back to a temp directory.
+- `.worktrees/` is generated: ensure it is git-ignored (add it to `.git/info/exclude` if it is not
+  already in `.gitignore` — do not edit the user's `.gitignore` without asking).
+- **A fresh worktree has no installed dependencies.** `node_modules/`, `vendor/`, `target/`, and
+  virtualenvs are git-ignored, so they do NOT come across — the lane starts with source only. Run the
+  project's install step in the worktree (`pnpm install`, `npm ci`, `go mod download`, `uv sync`, …)
+  as part of lane setup, BEFORE dispatching the executor, and tell the executor it is done. Skipping
+  this is expensive and hard to diagnose from inside the lane: the executor sees a missing binary or
+  unresolvable import, concludes the dependency tree is broken, and starts digging through
+  `node_modules`/`.pnpm` instead of doing its task. If the install itself fails, that is a lane setup
+  blocker — report it and do not dispatch the executor into a lane that cannot build.
+- Browser/E2E runners (Playwright, Cypress) need their own one-time browser download in addition to
+  the package install. If a task's acceptance criteria require E2E, visual, or a11y-in-browser tests,
+  verify the runner actually works in the lane during setup; if it does not, say so up front rather
+  than letting the executor discover it mid-pass.
+- **Reuse installed dependencies instead of installing per lane.** A full install per lane is one of
+  the most expensive parts of setup. Prefer, in order: (1) symlink or reflink the existing
+  `node_modules`/`vendor`/`target` from the main checkout into the lane when the toolchain tolerates it
+  (`ln -s` for a pnpm/npm monorepo generally works, since the store is content-addressed); (2) a warm
+  shared cache (`pnpm install --offline`, `npm ci --prefer-offline`, `CARGO_TARGET_DIR` pointing at a
+  shared dir); (3) a full install, only if neither works. Verify with one cheap command (the test
+  runner's `--version`, or a scoped test) that the lane can actually build before dispatching.
+- **Always isolate — one worktree per task lane, no exceptions.** Even a single-task batch runs in its
+  own `.worktrees/<task-id>/`. Uniformity is the point: the executor, reviewer, commit, and integration
+  steps behave identically every run, so there is no branch-of-behavior to get wrong. Do not "optimize"
+  by running a lane directly on the story branch.
+
+**Keep the user able to see the work.** The user cannot watch a lane they don't know about, and an
+invisible change is the main complaint against isolated lanes. So:
+
+- When you create lanes, tell the user the exact paths up front — e.g.
+  `T-009 → .worktrees/t-009 (branch task/t-009)` — so they can `cd` in and run `git diff`/`git status`
+  themselves while work is in flight.
+- Never leave a lane behind as the only home of finished work. After CLEAN → commit → integrate into
+  the story branch → push, the change is visible in the normal checkout; that is the point of
+  integrating promptly rather than at the end of the batch.
+- `git worktree remove <path>` the lane once its commit is integrated AND pushed, then confirm
+  `git worktree list` shows only the main checkout plus still-active lanes. A finished lane left
+  registered — especially one whose directory was deleted — keeps its `task/*` branch locked and leaves
+  the repo looking like it has work in progress that it doesn't.
+- If a lane is abandoned (task stopped at the safety limit, or the user cancels), say so explicitly and
+  report whether its commits were integrated or discarded. Never silently strand a branch.
+- Remove the worktree after its commit is integrated and pushed (`git worktree remove`).
+
 1. **Kick off — fill all worker slots before waiting**: CALL ACTIVE-TASK EXECUTORS IN ONE PARALLEL
    DISPATCH BATCH (`tiki-taka:be-executor` / `tiki-taka:fe-web-executor` / `tiki-taka:fe-mobile-executor`).
    When tasks exceed runtime capacity, queue the overflow and start them as slots become available;
@@ -289,6 +343,19 @@ parallel mutating executors in one shared checkout.
 8. Safety limit: per task, 5 execute→review iterations without reaching CLEAN → STOP that task and
    report it to the user. One stuck task does not block the others — the rest of the pipeline keeps
    running; report the stuck task alongside whatever else has already gone CLEAN and committed.
+9. **Oversized-task circuit breaker.** A task that cannot finish one executor pass without hundreds of
+   tool calls is a task-breakdown problem, not an effort problem — measured runs have spent 200k+
+   context on a single task grinding a failing test runner. When an executor reports that it hit a retry
+   ceiling (`executor-workflow` §0c), or returns having verified only part of its acceptance criteria:
+   - Do NOT immediately re-dispatch the same task hoping for a better run. A re-dispatch with no new
+     information costs a full pass and usually reproduces the same wall.
+   - Judge whether the task is too big: more than ~3 distinct deliverables, or acceptance criteria
+     spanning several test types (unit + E2E + visual + a11y), means it should be split.
+   - If it is oversized, split it into subtasks along its deliverables, tell the user what you split and
+     why, and run the pieces as separate lanes. Keep whatever the original pass already landed.
+   - If it is genuinely blocked (broken environment, missing runner), report the blocker instead —
+     splitting a task will not fix an unavailable test runner.
+   Surface this to the user either way; never quietly retry an oversized task until it happens to pass.
 
 ### Commit & Push
 

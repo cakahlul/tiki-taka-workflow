@@ -52,11 +52,23 @@ often 3-8k tokens for ONE call. Twenty calls is your whole budget with nothing t
 - **Batch** when the API supports it (bulk create) instead of one call per item.
 - **Do not re-fetch** something you already have. Note the id/key/URL the first time and reuse it.
 
-## Reading documents
+## Reading files and documents — the largest measured cost
 
-- Read a document ONCE. If you need it later, work from the notes you already took, not a re-read.
-- For a large doc, pull the section you need — not the whole page — when the tool allows it.
-- Never read a file to "double-check" something a previous tool result already told you.
+On real runs, file reads dominate an agent's context: far more than tests, instructions, or tracker
+calls. Two habits account for nearly all of it.
+
+- **Read once, never twice.** Track what you have opened this run. A second read is a lookup — serve it
+  with `rg -n '<symbol>' <file>` or a ranged `Read` around the spot, not another full open. Never
+  re-read a file to "double-check" what a previous tool result or your own `Edit` already established.
+- **Range-read anything large.** `wc -l` first; over ~300 lines, locate with `rg -n` then read only
+  that range via `offset`/`limit`. Whole-file reads are for small files and files you will rewrite
+  entirely. Barrel/`index` files and long integration tests are the classic traps — big, re-opened
+  constantly, and rarely needed in full.
+- For a large doc, pull the section you need, not the whole page.
+
+Reading a repo checkout that lives outside the repo (a temp dir, the session scratchpad) also makes
+every path session-unique, so nothing read in one lane can be reused in another. Keep worktrees inside
+the repo.
 
 ## Revision passes
 

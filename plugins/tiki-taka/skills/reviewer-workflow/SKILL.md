@@ -54,6 +54,13 @@ paste a whole log or stack trace dump.
 - STOP with `STATUS: NEEDS_REVISION` only if a test is red that was green in the baseline (a NEW failure) — write those failing test names + output as the issue and do not proceed to code review.
 - If the executor gave no baseline (e.g. skipped it) and the suite is red, treat every failure as new.
 
+**Retry ceiling — the gate is a measurement, not a project to fix.** Run the suite at most **twice**;
+a runner that never produces a green run gets **one** retry, then counts as unavailable. Never
+reinstall dependencies, clear caches, or try flag combinations to coax it into working — that is the
+executor's environment blocker to report, not yours to grind. If the gate cannot run, say so
+explicitly, review the diff on its merits, and mark the test evidence as unavailable in your report
+rather than either blocking on it or implying tests passed.
+
 Only when there are no new failures do you continue to the code review.
 
 ## 3. Review order
@@ -79,6 +86,14 @@ widen in these cases rather than reviewing the hunk alone:
 Otherwise the hunk plus a few lines of context is enough. Read ranges (`offset`/`limit`) over whole
 files when the file is large. The point is not to read less than the review needs — it is to not read
 every touched file end to end out of habit.
+
+**Never read the same file twice in one review.** Measured on real runs, repeat reads of a handful of
+files — barrel/`index` files and long integration-test files above all — are the single largest context
+cost in a review pass. When you need one more detail from a file you already opened, use
+`rg -n '<symbol>' <file>` or a ranged `Read` around that spot; do not reopen it. Check size with
+`wc -l` before opening anything unfamiliar, and range-read anything over ~300 lines. This does not
+license reviewing less: widen per the rules above whenever correctness needs it — just reach for `rg`
+and ranges instead of another full-file read.
 
 Then review tests before implementation code: tests reveal intent and coverage. Check whether the tests actually verify the intended behavior, not just that they pass — a suite that's green but tests the wrong behavior, or omits required cases, is still an `Important` issue.
 
