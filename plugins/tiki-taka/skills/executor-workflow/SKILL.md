@@ -90,6 +90,20 @@ what you attempted (with the count), the shortest decisive error line, and what 
 **A partial pass reported honestly is a success. A complete-looking pass produced by grinding is not.**
 Reaching a ceiling is expected and is never a reason to hide the gap or to keep going quietly.
 
+### 0d. Batch digest — trust it instead of re-deriving
+
+If the dispatch includes a **batch digest** (`.tiki-taka/scratch/batch-digest.md`, economy mode), read it
+once and treat it as authoritative for: stack and commands (test/build/lint), project conventions,
+shared contract signatures, the batch's test baseline, and which test runners actually work here.
+
+Do NOT re-derive what it already states — no re-detecting the package manager, re-finding the test
+command, or re-reading a neighbouring component to infer a convention it already documents. That
+re-derivation is exactly the cost the digest exists to remove.
+
+Two exceptions: if the digest contradicts what you actually observe, trust your observation, say so in
+your report, and note it needs correcting. And if the digest is silent on something you need, find it
+yourself as usual.
+
 ## 1. Review lessons check
 
 Before starting, check whether `.claude/knowledge/review-lessons.md` exists at the repo root. If it does, read it — it's a list of mistake patterns reviewers have previously found in this project. Make sure your current work does not repeat them.

@@ -1,6 +1,6 @@
 {
   "name": "tiki-taka",
   "description": "PRD-to-execute development workflow orchestrator: PRD analysis, TRD writing, task breakdown, per-task execute-review-revise pipeline, bug fixing workflow — with a complete skill set bundled (TDD, security, performance, etc.).",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "author": { "name": "Ahlul Esasjana" }
 }

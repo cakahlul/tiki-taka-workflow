@@ -183,6 +183,21 @@ When entering execution-only:
 - Everything else in the Execution Phase (per-task execute → review → revise → commit → push → Done,
   contracts for dependent tasks, story rollup) applies unchanged.
 
+### Execution mode: parallel (default) or economy
+
+The default Execution Phase below optimizes **wall-clock time** — lanes run concurrently. That is the
+tiki-taka principle, and it costs tokens: every subagent has its own context, so knowledge two lanes
+both need is paid for once per lane. Parallel execution of the same batch typically costs on the order
+of twice the tokens of running it sequentially. This is structural, not a defect to tune away.
+
+**When the user asks for the cheap / economy / sequential mode, or says total token cost matters more
+than speed, call the skill `tiki-taka:economy-mode` and follow it instead of the parallel dispatch
+rules below.** Everything else in this command still applies: worktree discipline, contracts, the
+CLEAN → commit → push → Done order, phase status, and the safety limits.
+
+If the user has not said which they want and the batch is large enough for the difference to matter,
+ask once — do not silently pick. Never claim parallel execution can match sequential total cost.
+
 ### Execution Phase (PER-TASK PIPELINE: each task flows execute → review → revise on its own, no global barrier)
 
 All tasks produced by `tiki-taka:task-breaker` in the active phase MUST be executed IN PARALLEL, including tasks that

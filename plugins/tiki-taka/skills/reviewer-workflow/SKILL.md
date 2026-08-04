@@ -17,6 +17,15 @@ Never review the shared/root checkout for an isolated lane.
 The two things that blow a reviewer's budget are **test logs** and **whole-file reads** — both are
 handled explicitly below. Target 60k for the whole review pass.
 
+## 0b. Batch digest
+
+If the dispatch includes a **batch digest** (`.tiki-taka/scratch/batch-digest.md`, economy mode), it is
+authoritative for stack/commands/conventions/contract signatures and the batch's test baseline — use it
+instead of re-deriving them, and use its baseline as the gate comparison when the executor's own
+baseline is missing. If a **focused review** was requested for a low-risk task, still run the test gate
+and check every acceptance criterion; narrow only the wider architecture/performance sweep, and say in
+your report that the review was focused. Sensitive-path work (§1) is never focused-only.
+
 ## 1. Skill-loading discipline
 
 Skills are expensive to load and this agent runs on every review pass — be deliberate.
