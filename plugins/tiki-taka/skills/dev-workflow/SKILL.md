@@ -12,16 +12,15 @@ description: Run the complete Tiki-Taka PRD-to-ship development workflow in Code
 4. Read `PLUGIN_ROOT/commands/dev-workflow.md` completely; it is the canonical workflow source and
    must not be summarized before execution.
 5. Execute the canonical workflow with the compatibility contract and model policy applied.
-6. For every named agent call, resolve its model tier immediately before delegation, then read the
-   corresponding `PLUGIN_ROOT/agents/<name>.md` completely and
-   pass its role instructions and relevant context to the delegated agent. The canonical workflow's
-   explicit parallel stages authorize bounded Codex subagent delegation.
-7. Preserve Planning, Execution-only, per-task executor-review-revision lanes, CLEAN gates, Q&A log,
-   publication stages, commits, pushes, tracker updates, and final review summary exactly unless the
-   user explicitly narrows the workflow.
+6. For every named agent call, resolve model/effort immediately, pass `fork_context: false`, one
+   accepted spawn field (`message` or `items`), role instructions, scoped locations, digest, and budgets.
+   Read each role definition completely before delegation.
+7. Preserve planning, execution-only, Q&A, independent review, CLEAN gates, DAG-ready parallelism,
+   commits, pushes, and final review summary. Main performs narrow status transitions; never spawn a
+   status-only executor or duplicate publisher.
 
-**Scheduler invariant:** after any delegated job completes, process that completion and refill every
-free worker slot from the reviewer/revision/task queue before commentary, status replies, integration,
-or unrelated work. Never wait for the user to notice or request reuse of an idle slot.
-
-Do not modify the Claude command or agent files while running this skill.
+**Scheduler invariant:** after any delegated job completes, process completion and refill every free slot
+from ready/reviewer/revision queues before commentary, status replies, integration, or unrelated work.
+Never wait for the user to notice or request reuse of an idle slot. Dependents wait for integrated
+prerequisites; revisions resume stored lane IDs. Read exact collaboration declarations before first use,
+persist exact non-empty spawn IDs before waiting, and never trial guessed keys or IDs. No periodic polling.

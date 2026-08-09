@@ -35,7 +35,8 @@ Before writing any code, operate in read-only mode:
   and their acceptance criteria. If the Figma MCP isn't available, note it as an open question and
   ask the user for the spec rather than guessing.
 
-**Do NOT write code during planning.** The output is a plan document saved to `tasks/plan.md` and a task list saved to `tasks/todo.md`, not implementation.
+**Do NOT write code during planning.** The output is a plan document and task list at caller-provided
+locations; Tiki-Taka uses `.tiki-taka/scratch/`, not a fixed `tasks/` directory.
 
 ### Step 2: Identify the Dependency Graph
 
@@ -150,10 +151,11 @@ If a task is L or larger, it should be broken into smaller tasks. An agent perfo
 
 ## Output Files
 
-- **Plan document:** Save the implementation plan to `tasks/plan.md`.
+- **Plan document:** Save the implementation plan to caller-provided location (Tiki-Taka scratch when
+  invoked by that workflow).
 - **Task list:** Save the checklist-style task list to `tasks/todo.md`.
 
-Create the `tasks/` directory if it does not exist. These paths are the convention expected by the `/build` command and other downstream tooling.
+Do not create a speculative `tasks/` directory. Downstream workflow supplies its own artifact locations.
 
 ## Plan Document Template
 

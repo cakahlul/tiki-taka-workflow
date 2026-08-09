@@ -1,104 +1,75 @@
 ---
-description: Run the Bug Fixing Workflow (project-scout repo/stack → bug-analyst severity + root cause → parallel fixing executor-review loop → commit → incident report if Critical/High).
+description: Run read-only triage, then bounded DAG-based bug-fix execute-review lanes with persistent role contexts.
 ---
 
 # Bug Fixing Workflow
 
-## Runtime and model routing
+`RUNTIME=claude`; Codex adapter maps this command through `context/codex-runtime.md`. Read model policy
+once. Main-session model/effort is not a worker override. Resolve each role's model, effort,
+`fork_context: false` (Codex), budgets, and scoped capabilities at dispatch. Sol is never automatic.
 
-This command establishes `RUNTIME=claude`. Before calling any subagent, read
-`${CLAUDE_PLUGIN_ROOT}/context/model-policy.md` and resolve that call's tier from the role/mode and
-current risk. Pass the mapped Claude model and effort per invocation. Honor user overrides, strong
-concurrency limits, escalation rules, and `inherit` fallback. Do not add static model choices to the
-agent definitions.
+## Setup and triage
 
-## Setup gate (MUST run first)
+Run setup gate before any agent. Claude reads plugin `context/team-context.md` and
+`tool-providers.md`; Codex reads workspace `.tiki-taka/config/`. Missing/placeholder setup stops with
+setup guidance. Provider scope goes only to roles that need it.
 
-**Fast path:** read the first line of `${CLAUDE_PLUGIN_ROOT}/context/tool-providers.md`. If it is
-`<!-- SETUP: complete -->`, setup is done — skip the field-by-field template diff below and proceed.
-The marker is written by `/tiki-taka:setup-workflow` only when every field in both context files is
-filled, so its presence is authoritative. Fall through to the full check only when the marker is absent.
+For coding fixes, call `minimal-solution-check` first. Main owns questions: agents return
+`NEEDS_INPUT` with up to four questions; main asks, records, resumes.
 
-Before anything else, verify setup is **complete** — not just that the files exist. Read
-`${CLAUDE_PLUGIN_ROOT}/context/tool-providers.md` and `${CLAUDE_PLUGIN_ROOT}/context/team-context.md`,
-and their templates (`tool-providers.template.md`, `team-context.template.md`).
+1. Call read-only `project-scout` unless report already provides an unambiguous repository/stack. Scout
+   never checkout, pull, stash, clean, reset, revert, or write source/config.
+2. Call `bug-analyst` after repo resolution. It reads the report, severity, root cause, shared callers,
+   and emits either one fix lane or location records `{localId, dependsOnLocalIds, contract}`. Do not
+   spawn a scout just to build shared context.
+3. Main writes `.tiki-taka/scratch/batch-digest.md` <=500 words with repo/stack, commands, one convention
+   `file:line`, shared interfaces, one baseline per repo, runner availability, and fix DAG. Write
+   `.tiki-taka/scratch/execution-handoff.md` <=800 words for execution-only handoff. No transcript paste.
 
-Do NOT stop at "file exists". Compare each file against its template field by field: a field is
-**answered** only if its value differs from the template placeholder (any `<...>` token, or the
-template literals like `/absolute/path/to/...`). Gate outcome:
+## Fix lanes
 
-- **File absent, OR every field still placeholder** → not set up. STOP the workflow, do not call any
-  agent. Tell the user to run `/tiki-taka:setup-workflow`, then run it for them (full flow).
-- **Some fields answered, some still placeholder** → partial setup. Run `/tiki-taka:setup-workflow`
-  in **instant mode**: ask ONLY the sections whose fields are still placeholders — do not re-ask
-  answered ones. After the missing answers are written, continue this workflow.
-- **All fields answered** → proceed.
+Independent ready lanes run concurrently up to runtime capacity. Dependent lanes wait until prerequisites
+are integrated; contract-first speculation requires explicit user approval. State lives in
+`.tiki-taka/scratch/lanes.json` with separate `executorAgentId`/`reviewerAgentId`, pass count, model,
+effort, status, digest, worktree, and `resumeStatus`.
 
-This gate is non-negotiable and applies to every tiki-taka workflow command.
+```text
+ready = unfinished fixes whose prerequisites are integrated
+fill free slots from ready
+executor complete -> same-lane reviewer
+NEEDS_REVISION -> resume same executor
+CLEAN -> integrate -> unlock dependents -> refill
+```
 
-**Before starting**, read `${CLAUDE_PLUGIN_ROOT}/context/team-context.md` for Local Repo Roots,
-Squad Members, Repository Mapping, and Feature Scope data — used by project-scout as the reference for
-the affected repo/stack. Pass the Local Repo Roots to project-scout so it knows where to search. If
-that file still contains the template placeholders (`<squad>`, `<repo>`, `<name>`,
-`/absolute/path/...`), stop and tell the user to fill it in first.
+Capture IDs on first spawn. Claude revision uses `SendMessage` with stored agent ID/name. Codex uses only
+the runtime-supported resume/send-input mechanism. If unavailable, bounded digest + issue list and
+`resume unavailable`; no fresh-context claim. Keep executor/reviewer contexts independent. Spawn payload
+uses exactly one of `message` or `items`, never both. Discover collaboration tools by exact names only;
+never serialize `ALL_TOOLS` schemas.
 
-Also read `${CLAUDE_PLUGIN_ROOT}/context/tool-providers.md` (written by `/tiki-taka:setup-workflow`)
-if it exists. When present, pass the **Tasks** provider to the executors/reviewers and the
-**Designer** provider to the FE executors/reviewers so they DO NOT ask the user where things go. If a
-provider's MCP/tool is "none (not connected)", still pass the destination but tell the agent to fall
-back to a local `.md`. If the file is absent or still holds only template placeholders (`<...>`),
-agents ask as usual (generic behavior).
+No status-only executor or publisher worker. Main performs narrow `In Progress`/`Done`/Story transitions;
+phase status uses mechanical update or stored publisher. Preserve `CLEAN -> commit -> push -> Done`.
 
-## Minimal solution (MUST for all coding tasks)
+One repository baseline before dispatch; executors focused tests; reviewers affected tests; one full suite
+after integrations settle. Command/MCP result <=4,000 characters; report <=300 words. Executor budget
+40 completions/40 tool calls; reviewer 24/24; other roles 20/20. On exhaustion return `BUDGET_EXCEEDED`.
+Use blocking completion waits, no periodic polling, one nudge after genuine timeout, then stop lane.
+Maximum three automatic execute-review cycles per fix; ask before another.
 
-For EVERY coding task — writing, adding, refactoring, fixing, reviewing, designing code, or choosing
-a library/dependency — call the skill `tiki-taka:minimal-solution-check` first before working.
-Do not wait for the user to say so. Skip for non-coding tasks. Goal: the most minimal solution that still
-works (YAGNI, stdlib before custom code, native before dependency).
+Two simultaneous mutating lanes in one repo require `<repo>/.worktrees/<task-id>/`; one lane may use
+prepared story branch after dirty-tree checks; different repos need no worktree solely for uniformity.
+Reuse dependency caches. Do not claim path placement guarantees prompt-cache reuse.
 
-## Context budget
+## Commit, incident, accounting
 
-Read `${CLAUDE_PLUGIN_ROOT}/context/context-budget.md` once at the start; every agent you dispatch reads
-it too. From the orchestration side: pass the bug report in full plus repo/file LOCATIONS rather than
-pasted code, send revision dispatches with ONLY the reviewer's issue list, and relay agent reports
-compressed down to what the next step needs. If an agent reports it ran out of room with work uncovered,
-surface that to the user rather than re-dispatching the same oversized job.
+After reviewer `STATUS: CLEAN`, main commits/integrates/pushes promptly while other lanes run. Remove lane
+worktree only after integration and push. Never commit/push or transition external tickets without workflow
+and user authorization. If Critical/High, call `incident-reporter` only after all fix gates; otherwise skip.
 
----
+Mark workflow start/end. Write `.tiki-taka/scratch/token-ledger.json` with parent/descendant IDs, roles,
+models, efforts, input/cache fields, output/reasoning, completions, tool calls, waits, nudges,
+compactions, fresh spawns, resumes, and fallbacks. Claude duplicate API records group by `message.id`
+using maximum cumulative usage per field. Public-rate credits stay labeled estimates.
 
-When there is a bug/issue report, follow this flow in order.
-
-1. Call the subagent `tiki-taka:project-scout` to determine the affected repo/project and stack. If the ticket already explicitly names the repo, this agent uses it directly without cross-checking again. If there is a question from this agent, ask the user and DO NOT continue before it is answered.
-2. Call the subagent `tiki-taka:bug-analyst` to read the report (from an issue tracker such as JIRA, or manual), categorize the severity (Critical/High/Medium/Low), and do a root cause analysis in the affected repo's code to determine the fix location. If there is a question from this agent, ask the user and DO NOT continue before it is answered.
-3. Run the fixing. Steps 1-2 (project-scout, bug-analyst) MUST be sequential as above — but
-   once bug-analyst finishes, the fixing phase runs as a per-item pipeline, the same as the Execution
-   Phase in the Development Workflow — each item flows execute → review → revise on its own without
-   waiting at a shared barrier:
-   - **Single-location case** (bug-analyst output is plain text, not JSON): directly call one
-     executor for the relevant stack, nothing to parallelize.
-   - **>1-location case** (bug-analyst outputs a JSON block `localId`/`dependsOnLocalIds`/`contract`):
-     make every item runnable immediately, fill every runtime worker slot before waiting, and queue
-     only overflow caused by the runtime capacity. CALL STACK EXECUTORS IN PARALLEL — including items that
-     depend on one another (`dependsOnLocalIds` is non-empty). Each executor works against the `contract`
-     that bug-analyst has already written, DO NOT wait for the actual result of its dependency item to finish
-     first. The same-stack/same-service rule from the Development Workflow also applies: two items that
-     are both backend but depend on one another are still called in parallel, not sequentially.
-   - Each item (independent or contracted) runs the executor-reviewer loop in parallel with one
-     another — follow the same loop as the Development Workflow (revise until `STATUS: CLEAN`,
-     limit of 5 iterations per item).
-   - Apply the Development Workflow's parallel mutation isolation: one temporary task branch + git
-     worktree per item when agents share a checkout. Executor and reviewer stay in that lane; CLEAN
-     integration is short and serialized while all other lanes keep running.
-   - If the executor finds the `contract` from bug-analyst insufficient/ambiguous during implementation, report it
-     as an issue (not silently changing it) — the reviewer flags the dependency item that deviates from the
-     contract as `NEEDS_REVISION`, not the dependent item that already matches the initial contract.
-4. Commit changes per bug (per location item if multi-location), the commit message must reference the bug ticket number. Then **push to the story branch** (the branch the executor created in Branch setup, named after the story/bug ticket number; `git push -u origin <story-branch>` if no upstream yet). **After pushing, present a review summary to the user**: for each fix pushed, describe in detail what changed and highlight the key code — branch name, files touched, the notable functions/lines changed (with `file:line` references and short excerpts for the important parts), and what to pay attention to when reviewing. Write this user-facing walkthrough in full, not compressed.
-5. **Status update (skip for local `.md` bugs or when no tracker tool is available).** The executor sets the ticket to **In Progress** itself at the start of its first pass. After the fix is CLEAN and committed/pushed, call the same-stack executor ONCE MORE with explicit confirmation `STATUS: CLEAN` + already committed — it moves the ticket to **Done**. Mandatory order: CLEAN → commit → push → Done. Then, if the ticket has a parent Story, fetch the Story's child issues: if EVERY child is Done, transition the Story to **Done** too; if any child is still open, leave it. Report each status change (or why skipped) to the user so they know what is done vs still in progress.
-6. If this bug's severity is Critical or High, call the subagent `tiki-taka:incident-reporter` to create an incident report. If the severity is Medium/Low, skip this step.
-
-### Additional principles
-
-- Severity determines urgency, but does not change the review standard — the reviewer stays critical even if the bug is Critical and feels urgent.
-- **Communication contract.** `Read` `context/comms-style.md` and follow it for how you dispatch subagents and relay results: machine-to-machine (dispatch prompts + agent notes) is caveman; user-facing (questions + the post-push walkthrough) is full prose.
-- **Model routing source of truth.** Use only `context/model-policy.md`; do not maintain a second tier
-  table inside this command.
+Final report: severity/root cause, changed lanes, tests, status/order, formulas, ledger summary, and
+runtime limitations. Never claim exact savings without measurement. Do not commit or push.

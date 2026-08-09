@@ -66,9 +66,8 @@ calls. Two habits account for nearly all of it.
   constantly, and rarely needed in full.
 - For a large doc, pull the section you need, not the whole page.
 
-Reading a repo checkout that lives outside the repo (a temp dir, the session scratchpad) also makes
-every path session-unique, so nothing read in one lane can be reused in another. Keep worktrees inside
-the repo.
+Path placement does not guarantee prompt-cache reuse; cache behavior depends on runtime prompt prefixes.
+Keep worktrees inside repo for safe git ownership and easy cleanup, not as a cache promise.
 
 ## Revision passes
 

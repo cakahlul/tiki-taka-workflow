@@ -2,7 +2,7 @@
 
 A PRD-to-ship development workflow orchestrator for any software team. It runs a critical-thinking
 planning pipeline (challenge the PRD, slice by technical dependency, write a TRD, break into tasks)
-and a parallel execute→review barrier loop with contract-first dependency handling. It supports
+and a DAG-based execute→review loop that runs ready independent tasks concurrently. It supports
 **Claude Code and Codex** from the same workflow source: Claude Code uses explicit slash commands,
 while Codex uses explicit workflow skills. The large orchestration workflows do not auto-trigger for
 ordinary coding requests.
@@ -33,9 +33,9 @@ markdown agents/skills, not only Claude.
 | `/tiki-taka:setup-workflow`   | Configure the plugin for your team: asks where PRD-slices / TRD / tasks go, which MCP/tools serve them, project location + team assignment, and design-tool provider. Writes the answers so the workflow agents stop asking. |
 | `/tiki-taka:reset-workflow`   | Reset the plugin back to generic — undo `setup-workflow`. Restores `context/team-context.md` to its blank template and deletes `tool-providers.md`. No agent files are touched.                                    |
 | `/tiki-taka:prd-analyze`      | Analyze a PRD against current production code, capture clarification Q&A, publish the gap analysis, and optionally slice rollout phases. |
-| `/tiki-taka:dev-workflow`   | Development Workflow: Planning Phase (prd-analyst + project-scout → prd-slicer → trd-writer → task-breaker) → Execution Phase (per-task execute → review → revise → commit → push pipeline, no shared barrier) → review summary → status update. Also has an Execution-only entry point that skips Planning when tasks are already fully described. |
-| `/tiki-taka:economy-mode`   | Run the Execution Phase sequentially when lowest total token cost matters more than wall-clock speed. |
-| `/tiki-taka:bug-workflow`   | Bug Fixing Workflow: project-scout (repo/stack) → bug-analyst (severity + root cause) → parallel fixing executor-review loop → commit & push → review summary → status update → incident-reporter (if Critical/High).                                        |
+| `/tiki-taka:dev-workflow`   | Planning, then ready-queue DAG execution: independent tasks run in parallel; dependents unlock after integration; each lane keeps independent executor/reviewer contexts and resumes revisions. Execution-only entry point skips planning. |
+| `/tiki-taka:economy-mode`   | Optional sequential Execution Phase with the same digest, review, and safety gates when wall-clock speed matters less. No fixed token-saving claim. |
+| `/tiki-taka:bug-workflow`   | Read-only scout + root-cause analysis, then DAG-based fix lanes with independent review, bounded resumes, commit/push, narrow main-thread status, and incident report for Critical/High. |
 | `/tiki-taka:em-review`      | On-demand PRD-compliance audit (Engineering Manager review), separate from dev/bug-workflow: cross-checks the raw PRD against the persisted Analysis, symbol-traces each active-phase user story's acceptance criteria to reachable code (L1), auto-emits a gap-task for every partial/missing story, then offers to trigger dev-workflow Execution-only. |
 
 These slash commands remain the Claude Code entry points. Codex exposes the same seven entry points as
@@ -61,8 +61,8 @@ Both workflows follow the same git and tracker discipline so you always know wha
 - **Review summary.** After pushing, the workflow presents a detailed, user-facing walkthrough:
   branch name, files touched, the notable functions/components/endpoints changed (with `file:line`
   references and short code excerpts) — so you can review the work.
-- **Status updates.** Executors move the ticket to **In Progress** at the start, and to **Done**
-  after CLEAN + commit + push (mandatory order: CLEAN → commit → push → Done). When every child of a
+- **Status updates.** Main thread performs narrow **In Progress**/**Done** transitions after lane gates;
+  no full executor is spawned only for status. Mandatory order: CLEAN → commit → push → Done. When every child of a
   parent Story is Done, the Story is transitioned to **Done** too. Each status change is reported to
   you so it is clear what is finished vs still in progress. Skipped for local `.md` tasks or when no
   tracker tool is connected.
@@ -138,10 +138,10 @@ Tiki-Taka determines runtime from its entry point rather than asking an agent to
 - Claude slash command → `RUNTIME=claude`
 - Codex workflow skill → `RUNTIME=codex`
 
-Delegated agents are routed through shared `economy`, `balanced`, and `strong` tiers. Claude maps
-those tiers to Haiku/Sonnet/Opus; Codex maps them to `gpt-5.6-terra` at low/medium reasoning and
-`gpt-5.6-sol` at high reasoning. Unsupported model overrides fall back to the user-selected session
-model instead of stopping the workflow.
+Delegated agents use shared tiers. Claude maps `economy`/`balanced`/`strong` to Haiku low, Sonnet medium,
+and Opus high. Codex maps them to `gpt-5.6-luna` low/medium and `gpt-5.6-terra` high. Sol is explicit
+worker override only. Main-session model/effort does not override workers. Unsupported overrides fall
+back once with `fork_context: false` and record the fallback.
 
 Mechanical scouting, publishing, and incident prose default to `economy`; normal planning, coding,
 debugging, and first-pass review use `balanced`; EM compliance review, confirmed high-risk work, and
@@ -149,8 +149,14 @@ the second revision cycle onward use `strong`. At most two strong agents run con
 An explicit user model or effort choice always wins.
 
 The policy lives in `plugins/tiki-taka/context/model-policy.md`; model names are not duplicated across
-the agent definitions. Codex model-overridden workers receive a bounded task prompt without inheriting
-the full parent conversation, reducing both input tokens and context leakage.
+agent definitions. Codex workers always use `fork_context: false`, one spawn content field, scoped tools,
+shared batch digest, bounded reports, and persistent executor/reviewer IDs when resume is supported.
+
+Execution writes `.tiki-taka/scratch/batch-digest.md`, `.tiki-taka/scratch/execution-handoff.md`,
+`.tiki-taka/scratch/lanes.json`, and `.tiki-taka/scratch/token-ledger.json`. Parallel mode remains
+default; economy changes scheduling only. The ledger always records observed scheduler counts; token
+fields are measured only when current-tree telemetry is exposed, otherwise they remain null for post-run
+aggregation. Public-rate estimates stay explicitly labeled.
 
 ## 15 Subagents
 
@@ -162,7 +168,7 @@ fe-mobile-reviewer
 
 ## Bundled skills (18 support skills + 7 Codex workflow adapters)
 
-Self-contained — every skill referenced by an agent is bundled along, no need to install another plugin:
+Bundled support skills and adapters (missing external references are not required by normal workflow):
 
 `minimal-solution-check`, `test-driven-development`,
 `incremental-implementation`, `debugging-and-error-recovery`, `api-and-interface-design`,

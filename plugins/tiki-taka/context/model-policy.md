@@ -7,25 +7,32 @@ user/session. Never ask an agent to guess its runtime.
 
 - A workflow entered through `commands/*.md` runs with `RUNTIME=claude`.
 - A workflow entered through a Codex workflow `SKILL.md` runs with `RUNTIME=codex`.
-- Pass `RUNTIME`, `MODEL_TIER`, and the resolved model/effort in every delegated-agent prompt.
-- An explicit user model or effort override wins over this file.
+- Pass `RUNTIME`, `MODEL_TIER`, resolved model/effort, `fork_context: false`, and pass budgets in
+  every delegated-agent prompt.
+- Main-session model/effort is not a worker override. Only explicit user text naming delegated workers
+  overrides this policy.
+- Sol is never an automatic default. It is an explicit worker override only.
 
 ## Tier mapping
 
 | Tier | Claude Code | Codex | Intended use |
 |---|---|---|---|
-| `economy` | `model: haiku`, `effort: low` | `model: gpt-5.6-terra`, `reasoning_effort: low` | Mechanical, bounded, read-heavy, or prose work |
-| `balanced` | `model: sonnet`, `effort: medium` | `model: gpt-5.6-terra`, `reasoning_effort: medium` | Normal planning, coding, debugging, and review |
-| `strong` | `model: opus`, `effort: high` | `model: gpt-5.6-sol`, `reasoning_effort: high` | High-risk reasoning, audits, or repeated failure |
-| `inherit` | `model: inherit` | omit model override | User-selected session behavior |
+| `economy` | `model: haiku`, `effort: low` | `model: gpt-5.6-luna`, `reasoning_effort: low` | Mechanical, bounded, read-heavy, or prose work |
+| `balanced` | `model: sonnet`, `effort: medium` | `model: gpt-5.6-luna`, `reasoning_effort: medium` | Normal planning, coding, debugging, and review |
+| `strong` | `model: opus`, `effort: high` | `model: gpt-5.6-terra`, `reasoning_effort: high` | High-risk reasoning, audits, or repeated failure |
+| `inherit` | `model: inherit` | use the runtime-supported inherited model/effort | Explicit worker inheritance only |
 
 Use Claude's per-invocation `model` parameter instead of adding static `model` fields to agent
-frontmatter. On Codex, pass `model` and `reasoning_effort` when spawning the delegated agent.
-When a Codex call overrides the model, use `fork_context: false` and pass a complete bounded task
-prompt; do not copy the entire parent conversation into the worker.
+frontmatter. On Codex, pass the resolved model/effort for a selected tier; for explicit `inherit`, use
+only the runtime-supported inherited values. Always pass `fork_context: false`, including inherit/fallback
+paths. Use one accepted spawn payload form:
+`message` OR `items`, never both. Spawn contracts use message OR items, never both. Pass a complete
+bounded task prompt; never copy the parent chat.
 
 If the requested model, alias, or effort is unavailable, retry once with `inherit`; do not stop the
-workflow merely because routing is unsupported. Report the fallback in the final workflow summary.
+workflow merely because routing is unsupported. Keep `fork_context: false` and record the fallback in
+the final run ledger. If runtime accepts no resume/send-input operation, use a bounded lane-state
+digest and record `resume unavailable`; do not imply context was retained.
 
 ## Default role tiers
 
@@ -55,3 +62,14 @@ workflow merely because routing is unsupported. Report the fallback in the final
 5. Never downgrade `em` review mode or work involving confirmed security, destructive migration,
    data loss, or Critical severity below `strong` unless the user explicitly overrides it.
 6. Record only routing exceptions and fallbacks in the final summary; omit routine tier chatter.
+
+## Worker budgets
+
+- Executors: maximum 40 model completions and 40 tool calls per pass.
+- Reviewers: maximum 24 model completions and 24 tool calls per pass.
+- All other roles: maximum 20 model completions and 20 tool calls per pass.
+- A role that reaches its budget returns `BUDGET_EXCEEDED` with completed evidence and remaining work.
+- Default command/MCP output is <=4,000 characters; worker reports are <=300 words.
+- Automatic execute-review cycles stop at three per task. Ask before another cycle.
+- One blocking/event-driven wait per worker or completion wave; no periodic polling. At most one status
+  nudge after a genuine timeout, then stop the lane if it remains unresponsive.

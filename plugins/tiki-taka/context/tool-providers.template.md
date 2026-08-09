@@ -2,7 +2,7 @@
 
 > **Written by `/tiki-taka:setup-workflow`.** This is the blank template — the plugin is generic
 > while it looks like this. When the workflow commands read this file and find only placeholders
-> (`<...>`), they treat it as "not configured" and let the agents ask the user where things go.
+> (`<...>`), they treat it as "not configured"; workers return `NEEDS_INPUT` and the main thread asks where things go.
 > `/tiki-taka:reset-workflow` restores this file to the template.
 
 ## PRD Slicing

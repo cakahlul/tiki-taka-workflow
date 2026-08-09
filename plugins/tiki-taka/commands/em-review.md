@@ -47,8 +47,8 @@ part (this command is mostly analysis); it applies to any gap-task execution tri
 
 ## Context budget
 
-Read `${CLAUDE_PLUGIN_ROOT}/context/context-budget.md` once at the start; `em` reads it too. This is the
-heaviest single agent run in the plugin — it traces many stories across real repos.
+Read `${CLAUDE_PLUGIN_ROOT}/context/context-budget.md` once in main. `em` receives compact prelude,
+scoped story locations, and the 30/20/20 role budget; it does not reload full budget/comms tutorials.
 
 **Scope it before you dispatch.** Default to the active phase (never "whole PRD" unless the user asked).
 If the active phase has a lot of user stories, dispatch `em` per batch of stories rather than all at once
@@ -65,7 +65,7 @@ lossy chain this command exists to catch.
 
 Call `tiki-taka:em` in **`review` mode**. Tell it: the feature/PRD, the Local Repo Roots, and the scope
 — **active phase by default**; pass a different phase or "whole PRD" only if the user asked. Relay any of its
-questions (`AskUserQuestion`) to the user and wait.
+`NEEDS_INPUT` questions to the user from main and wait.
 
 em cross-checks raw PRD ↔ Analysis (analysis gaps), symbol-traces each user story's AC to
 reachable non-stub code (execution gaps), assigns ✅/⚠️/❌ per story, and **auto-emits a gap-task for every
@@ -94,5 +94,5 @@ whether to fix the gaps now.
 - SPEC-centric, not code-centric — em-review audits *whether the promise was kept*, the reviewers audit
   *whether the code is correct*. Don't duplicate the reviewers.
 - AVOID ASSUMPTIONS. Ambiguous → ask via `AskUserQuestion`, never plain-text questions.
-- **Communication contract.** `Read` `context/comms-style.md`: dispatch prompts + agent notes are caveman;
-  the verdict report + questions to the user are full prose.
+- **Communication contract.** Dispatches/agent notes stay compact with IDs and evidence verbatim; main
+  renders verdicts/questions as full prose.

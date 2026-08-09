@@ -43,8 +43,8 @@ so they DO NOT ask the user where to put things:
 - **Scouting** provider → `project-scout`
 
 If a provider's MCP/tool is "none (not connected)", still pass the destination but tell the agent to
-fall back to a local `.md`. If the config is absent or still placeholder, the agents ask the user as
-usual (generic behavior).
+fall back to a local `.md`. If the config is absent or still placeholder, agents return `NEEDS_INPUT`;
+main asks and records the answer before resuming them.
 
 ## Minimal solution (MUST for all coding tasks)
 
@@ -54,10 +54,9 @@ works.
 
 ## Context budget
 
-Read `${CLAUDE_PLUGIN_ROOT}/context/context-budget.md` once at the start. Both agents you dispatch read
-it too. From the orchestration side: pass the PRD LOCATION rather than pasting the PRD, and when you
-assemble the document in step 3, write it from the agents' returned summaries — do NOT re-read the PRD
-or re-scout the repo yourself to double-check what they reported.
+Read `${CLAUDE_PLUGIN_ROOT}/context/context-budget.md` once in main. Pass PRD location, not pasted
+content. Workers get compact prelude + scoped locations and do not reload the full budget/comms files.
+Write the analysis from returned summaries; do not reread PRD or re-scout to double-check.
 
 ---
 
@@ -78,7 +77,7 @@ so the gap can be computed in step 3.
 
 ### 2. Answer clarifications
 
-If EITHER agent asks a question (via `AskUserQuestion`), relay it and wait for the user's answer
+If EITHER agent returns `NEEDS_INPUT`, ask from the main thread and wait for the user's answer
 before continuing. Wait for BOTH agents to finish — even if only one asked — before step 3.
 
 Beyond the agents' own questions: after both finish, if analyzing the PRD against the production
@@ -110,7 +109,7 @@ Ask the user via `AskUserQuestion` whether they want to slice this PRD into roll
 
 - **Yes** → call `tiki-taka:prd-slicer`, passing BOTH the prd-analyst analysis and the project-scout
   knowledge (the same inputs prd-slicer needs), so slicing reflects the actual technical condition,
-  not assumptions. Relay any prd-slicer question to the user.
+  not assumptions. If it returns `NEEDS_INPUT`, ask from main and resume it.
 - **No** → stop. The analysis document is the deliverable; note that slicing can be run later via the
   full `/tiki-taka:dev-workflow`.
 

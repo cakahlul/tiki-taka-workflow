@@ -293,21 +293,11 @@ describe('TaskService', () => {
 | No test isolation | Tests pass individually but fail together | Each test sets up and tears down its own state |
 | Mocking everything | Tests pass but production breaks | Prefer real implementations > fakes > stubs > mocks. Mock only at boundaries where real deps are slow or non-deterministic |
 
-## When to Use Subagents for Testing
+## Agent boundary
 
-For complex bug fixes, spawn a subagent to write the reproduction test:
+Executors and reviewers do not spawn nested agents. Write reproduction tests in current role; main owns delegation.
 
-```
-Main agent: "Spawn a subagent to write a test that reproduces this bug:
-[bug description]. The test should fail with the current code."
-
-Subagent: Writes the reproduction test
-
-Main agent: Verifies the test fails, then implements the fix,
-then verifies the test passes.
-```
-
-This separation ensures the test is written without knowledge of the fix, making it more robust.
+Main role verifies the reproduction, implements the fix, and verifies the pass.
 
 ## See Also
 

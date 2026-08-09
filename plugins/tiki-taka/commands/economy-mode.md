@@ -1,18 +1,17 @@
 ---
-description: Run the Execution Phase in economy mode — sequential lanes, shared context read once as a batch digest, review scaled to risk. Lowest total token cost; strictly slower than the parallel default.
+description: Run the optional sequential Execution Phase with shared digest, persistent reviewers, and the same safety gates.
 ---
 
 # Economy Mode
 
-Call the skill `tiki-taka:economy-mode` and follow it for this batch's Execution Phase, in place of the
-parallel dispatch rules in `/tiki-taka:dev-workflow`.
+Call `tiki-taka:economy-mode` for this batch's Execution Phase, in place of parallel scheduling.
 
-Everything else from `dev-workflow` still applies unchanged: the setup gate, worktree discipline
-(`<repo>/.worktrees/<task-id>/`), dependency contracts, retry ceilings, CLEAN → commit → push → Done
-ordering, story rollup, phase status, and the safety limits.
+Everything else from `dev-workflow` applies: setup, one baseline per repository, dependency DAG, digest,
+conditional worktrees, persistent executor/reviewer IDs, retry ceilings, `CLEAN -> commit -> push -> Done`,
+story/phase status, output budgets, waits, and accounting.
 
-Tell the user up front that this mode is slower than the parallel default, and roughly why: sequential
-lanes cannot overlap, so the batch takes about the sum of its task durations rather than the longest one.
-It is chosen when total token cost matters more than finishing time.
+Tell user this mode is slower because lanes do not overlap. It is opt-in when wall-clock time matters less
+than avoiding concurrent coordination overhead. Shared digest savings also apply to parallel mode; do not
+claim a fixed token percentage.
 
 If the user actually wants speed, use `/tiki-taka:dev-workflow` instead.
