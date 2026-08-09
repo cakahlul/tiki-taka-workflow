@@ -21,9 +21,10 @@ the workflow intent but use the safe Codex behavior.
 - On Codex, mutable setup belongs to the user's current workspace, not the installed plugin:
   - `WORKSPACE_ROOT/.tiki-taka/config/team-context.md`
   - `WORKSPACE_ROOT/.tiki-taka/config/tool-providers.md`
-- For canonical reads of `context/team-context.md` or `context/tool-providers.md`, prefer the
-  workspace config above. Fall back to the legacy plugin copy only when the workspace file does not
-  exist, so existing Claude installations remain usable.
+- For canonical reads of `context/team-context.md` or `context/tool-providers.md`, use the workspace
+  files above. If either is absent, treat setup as incomplete and use the matching plugin template for
+  placeholder checks. Never read the mutable plugin copies as Codex config: those belong to Claude Code
+  and may contain different team/provider settings.
 - Setup writes workspace config by copying the bundled templates and filling the copies. Reset
   restores or removes only the workspace config after explicit user confirmation. Never overwrite
   the bundled templates.
@@ -36,6 +37,8 @@ the workflow intent but use the safe Codex behavior.
 - A reference to `/tiki-taka:<name>` means run the installed skill named `<name>` on Codex.
 - `AskUserQuestion` means use the user-input mechanism available in the current Codex surface. If no
   structured input tool is available, ask one concise plain-text question and wait.
+- Canonical setup text mentioning `claude.ai`, `claude mcp`, or Claude slash commands is Claude-only;
+  on Codex, refer to Codex plugin/MCP settings and Codex skills instead.
 - Preserve the canonical command's setup gates, sequencing, Q&A log, review barriers, stop
   conditions, and user-visible summaries.
 - **Planning Complete Report gate is non-negotiable on Codex too.** After Planning step 6, present the
@@ -63,17 +66,17 @@ the workflow intent but use the safe Codex behavior.
 - **The worker's runtime contract is `PLUGIN_ROOT/context/codex-agent-prelude.md` — that file and
   nothing more.** It carries paths, tool mapping, context budget, comms, and mutation safety in the
   form a worker actually needs. Do NOT also pass this file (`codex-runtime.md`), `context-budget.md`,
-  `comms-style.md`, or `model-policy.md` to a spawned role: since `fork_turns: none` prompts are
+  `comms-style.md`, or `model-policy.md` to a spawned role: since `fork_context: false` prompts are
   self-contained, every one of those is re-paid on every spawn, and their main-thread content
   (scheduler, tier tables, worktree setup) is content a worker never acts on.
 - **Do not pass `model-policy.md` to a worker.** Tier resolution is the main thread's decision. Send
   the *outcome* (`model=<x>, reasoning_effort=<y>`), not the table used to derive it.
 - Pass **locations, not payloads**: give the spawned role a document's path/URL plus the sections it
-  needs, not the whole document pasted into the prompt. Since `fork_turns: none` prompts are
+  needs, not the whole document pasted into the prompt. Since `fork_context: false` prompts are
   self-contained, anything pasted is paid for by every role you paste it into. Revision spawns carry
   only the reviewer's issue list.
-- Model-overridden Codex agents use `fork_turns: none` with a self-contained task prompt, avoiding a
-  full conversation fork and its token cost.
+- Model-overridden Codex agents use `fork_context: false` with a self-contained task prompt, avoiding
+  a full conversation fork and its token cost.
 - Parallelize only stages the canonical command marks independent. Preserve all dependency and
   reviewer barriers.
 
@@ -91,12 +94,14 @@ runnable. Keeping a completed agent visible in the UI is not an excuse to leave 
    in a long parallel run, narrating every lane transition costs more than the orchestration itself,
    and it can never be evicted. Keep in your head only what the next action needs: which slots are
    free, and which task the completion you just observed belongs to.
-2. **Fill loop:** while a collaboration slot is free and `runnable` is non-empty, call `spawn_agent`
+2. **Fill loop:** while a collaboration slot is free and `runnable` is non-empty, call Codex's exposed
+   agent-spawn tool (`multi_agent_v1__spawn_agent` on current Codex CLI),
    immediately, record its ID in `active`, and repeat. Do not wait for one spawned agent before
    spawning the next. On the common four-slot Codex runtime, the main agent occupies one slot,
    leaving three workers; discover and use the actual available capacity rather than assuming it is
    unlimited.
-3. **Wait loop:** if `active` is non-empty, call `wait_agent` for the next completion event. Do not
+3. **Wait loop:** if `active` is non-empty, call Codex's exposed agent-wait tool
+   (`multi_agent_v1__wait_agent` on current Codex CLI) for the next completion event. Do not
    return to the user, run unrelated tools, or start a long main-thread task while a runnable job and
    a free worker slot exist.
 4. **Completion handling:** immediately remove the completed ID from `active`, update its lane, and
@@ -110,8 +115,8 @@ runnable. Keeping a completed agent visible in the UI is not an excuse to leave 
    use the main thread only after the fill loop has no job for a free worker slot. Continue until every
    lane is CLEAN or STOPPED; never introduce a global execute barrier or review barrier.
 
-Claude's phrase "all calls in one message" maps to consecutive Codex `spawn_agent` calls before the
-first `wait_agent`, followed by the mandatory fill → wait → completion → fill loop above, not to
+Claude's phrase "all calls in one message" maps to consecutive Codex agent-spawn calls before the
+first agent-wait call, followed by the mandatory fill → wait → completion → fill loop above, not to
 sequential local execution. If collaboration is unavailable or repeatedly refuses every spawn, stop
 and report that parallel execution is unavailable; never silently degrade a multi-task parallel stage
 to serial execution.

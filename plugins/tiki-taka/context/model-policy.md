@@ -21,8 +21,8 @@ user/session. Never ask an agent to guess its runtime.
 
 Use Claude's per-invocation `model` parameter instead of adding static `model` fields to agent
 frontmatter. On Codex, pass `model` and `reasoning_effort` when spawning the delegated agent.
-When a Codex call overrides the model, use `fork_turns: none` and pass a complete bounded task prompt;
-do not copy the entire parent conversation into the worker.
+When a Codex call overrides the model, use `fork_context: false` and pass a complete bounded task
+prompt; do not copy the entire parent conversation into the worker.
 
 If the requested model, alias, or effort is unavailable, retry once with `inherit`; do not stop the
 workflow merely because routing is unsupported. Report the fallback in the final workflow summary.

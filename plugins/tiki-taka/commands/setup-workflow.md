@@ -63,9 +63,10 @@ When a section needs an MCP/tool checked:
    at the available tools for a matching MCP prefix (e.g. `mcp__atlassian__*` for Confluence/JIRA,
    `mcp__figma__*` for Figma).
 2. If connected → record it as available (note the tool prefix).
-3. If NOT connected → emit a **warning** to the user: name what is missing and tell them to install/
-   connect it (for claude.ai connectors, via claude.ai connector settings; for other MCP servers, via
-   `claude mcp` or `/mcp` in an interactive session).
+3. If NOT connected → emit a **warning** to the user: name what is missing and tell them to connect it
+   through the current runtime's connector/MCP settings. On Claude Code, this may be claude.ai connector
+   settings, `claude mcp`, or `/mcp`; on Codex, use Codex plugin/MCP settings or the current Codex
+   surface's connector controls.
 4. **A warning NEVER blocks.** Record the choice + "not connected (warned)" and move on. The user can
    still finish setup and run the workflow; the agents will fall back (e.g. write a local `.md`).
 
@@ -221,11 +222,9 @@ Report a short summary to the user: each section's destination + whether its MCP
 list any warnings raised. Remind them: warnings don't block — the workflow still runs, agents fall
 back to a local `.md` where a tool is missing.
 
-**Frontmatter allowlist reminder.** The agents' `context/tool-providers.md` config is read at
-runtime, but each agent's `tools:` frontmatter (in `agents/*.md`) is a FIXED allowlist — an agent
-can only call an MCP tool whose prefix is listed there. The shipped agents list Atlassian
-(`mcp__atlassian__*`) and Figma (`mcp__figma__*`). If a section
-above was set to a tool whose MCP prefix is NOT one of those (e.g. a Linear/GitHub tracker, a Notion
-docs MCP, a different code-search MCP), WARN the user: the agent(s) fed by that section
-(`Fed to:` line) cannot call that MCP until its prefix is added to their `tools:` frontmatter —
-list which agent files need editing. This is manual; setup does not edit agent files.
+**Connector capability reminder.** `context/tool-providers.md` records the selected provider; actual
+availability comes from the current runtime/session. The shipped agent frontmatter does not enumerate
+provider-specific MCP prefixes, so do not claim that Atlassian or Figma is always available or tell the
+user to edit shared agent files just to configure a provider. Check the current runtime's tools during
+setup, warn when the configured provider is absent, and preserve the local `.md` fallback. Codex maps
+provider capability names through `context/codex-runtime.md`; Claude Code uses its own MCP/tool policy.

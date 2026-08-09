@@ -8,8 +8,12 @@ orchestrator owns those and already resolved them before spawning you.
 
 - `PLUGIN_ROOT` = plugin dir containing `commands/`, `agents/`, `skills/`, `context/`.
 - Read `${CLAUDE_PLUGIN_ROOT}` references as `PLUGIN_ROOT`.
-- Config: prefer `WORKSPACE_ROOT/.tiki-taka/config/<name>.md`, fall back to `PLUGIN_ROOT/context/<name>.md`.
-- Scratch: `WORKSPACE_ROOT/.tiki-taka/scratch/`.
+- Bare `context/<name>` references in bundled agent/skill docs mean `PLUGIN_ROOT/context/<name>`.
+- Runtime config: use `WORKSPACE_ROOT/.tiki-taka/config/team-context.md` and
+  `WORKSPACE_ROOT/.tiki-taka/config/tool-providers.md`; if absent, treat setup as incomplete and use
+  `PLUGIN_ROOT/context/*.template.md` for placeholder checks. Never use mutable Claude config files.
+- Scratch: `WORKSPACE_ROOT/.tiki-taka/scratch/`. Any bundled instruction calling scratch "cwd-relative"
+  resolves there; never create scratch files inside `LANE_WORKTREE`.
 
 ## Tools
 

@@ -152,7 +152,14 @@ An empty section (e.g. no Critical) may be written as "None" — do not delete i
 
 ## 7. Review-lessons write-back
 
-If you find a mistake pattern that could recur in other tasks (not a one-off typo/mistake specific to this task) — e.g. a security, performance, or architectural-consistency pattern — RECORD it concisely to `.claude/knowledge/review-lessons.md` at the repo root (create the file if it doesn't exist). Write: the mistake category, a short description, and the correct way. Do this both when the status is `NEEDS_REVISION` and when it's `CLEAN`.
+If you find a mistake pattern that could recur in other tasks (not a one-off typo/mistake specific to this task) — e.g. a security, performance, or architectural-consistency pattern — RECORD it to `.claude/knowledge/review-lessons.md` at the repo root (create the file if it doesn't exist). Do this both when the status is `NEEDS_REVISION` and when it's `CLEAN`.
+
+This file is read in full by every executor on every task — it does not get to grow unbounded. Before writing:
+
+- **Read the existing file first.** If an entry already covers the same pattern (same root cause, even from a different file/task), extend that entry's "Fix" line or add one clause — never append a new near-duplicate entry.
+- **Hard cap per entry: 5 lines** — one `## [Category] Title` heading, one `Pattern:` line (root cause, generic — no task ID, no line-by-line investigation narrative), one `Fix:` line (the rule to follow next time). Optional file:line reference inline, not a paragraph.
+- **No investigation prose.** Do not record how you found it, what git commands confirmed it, or what the code comment claimed. Only the pattern and the fix survive — that's the reusable part.
+- **Prune while you're in there.** If the file has grown past ~150 lines, fold or delete entries that are superseded, no longer applicable to the current codebase, or duplicate a more general entry already present.
 
 ## 8. Comms style
 
