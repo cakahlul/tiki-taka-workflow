@@ -1,11 +1,11 @@
 # tiki-taka
 
-A PRD-to-ship development workflow orchestrator for any software team. It runs a critical-thinking
-planning pipeline (challenge the PRD, slice by technical dependency, write a TRD, break into tasks)
-and a DAG-based execute→review loop that runs ready independent tasks concurrently. It supports
-**Claude Code and Codex** from the same workflow source: Claude Code uses explicit slash commands,
-while Codex uses explicit workflow skills. The large orchestration workflows do not auto-trigger for
-ordinary coding requests.
+A runtime-neutral PRD-to-ship development workflow orchestrator for any software team. It runs a
+critical-thinking planning pipeline (challenge the PRD, slice by technical dependency, write a TRD,
+break into tasks) and a DAG-based execute→review loop that runs ready independent tasks concurrently.
+It supports **Claude Code and Codex** from the same workflow source. Use the runtime-specific entry
+point for your tool; the large orchestration workflows do not auto-trigger for ordinary coding
+requests.
 
 Team-agnostic: nothing is hardcoded to a specific squad, and it works with whatever issue
 tracker / wiki you use (JIRA, Linear, GitHub Issues, Confluence, Notion, or plain `.md` files).
@@ -26,22 +26,28 @@ markdown agents/skills, not only Claude.
   </em>
 </p>
 
-## Commands
+## Usage
 
-| Command                     | Function                                                                                                                                                                                                         |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/tiki-taka:setup-workflow`   | Configure the plugin for your team: asks where PRD-slices / TRD / tasks go, which MCP/tools serve them, project location + team assignment, and design-tool provider. Writes the answers so the workflow agents stop asking. |
-| `/tiki-taka:reset-workflow`   | Reset the plugin back to generic — undo `setup-workflow`. Restores `context/team-context.md` to its blank template and deletes `tool-providers.md`. No agent files are touched.                                    |
-| `/tiki-taka:prd-analyze`      | Analyze a PRD against current production code, capture clarification Q&A, publish the gap analysis, and optionally slice rollout phases. |
-| `/tiki-taka:dev-workflow`   | Planning, then ready-queue DAG execution: independent tasks run in parallel; dependents unlock after integration; each lane keeps independent executor/reviewer contexts and resumes revisions. Execution-only entry point skips planning. |
-| `/tiki-taka:economy-mode`   | Optional sequential Execution Phase with the same digest, review, and safety gates when wall-clock speed matters less. No fixed token-saving claim. |
-| `/tiki-taka:bug-workflow`   | Read-only scout + root-cause analysis, then DAG-based fix lanes with independent review, bounded resumes, commit/push, narrow main-thread status, and incident report for Critical/High. |
-| `/tiki-taka:em-review`      | On-demand PRD-compliance audit (Engineering Manager review), separate from dev/bug-workflow: cross-checks the raw PRD against the persisted Analysis, symbol-traces each active-phase user story's acceptance criteria to reachable code (L1), auto-emits a gap-task for every partial/missing story, then offers to trigger dev-workflow Execution-only. |
+The same workflows are available in both runtimes. Use the entry point for the tool you are running:
 
-These slash commands remain the Claude Code entry points. Codex exposes the same seven entry points as
-plugin skills: `setup-workflow`, `reset-workflow`, `dev-workflow`, `economy-mode`, `bug-workflow`,
-`prd-analyze`, and `em-review`. Each Codex adapter reads the corresponding canonical Claude command,
-so workflow stages do not have two independent copies that can drift.
+| Workflow | Function | Claude Code | Codex |
+| --- | --- | --- | --- |
+| Setup | Configure team context, providers, repositories, and design tools. | `/tiki-taka:setup-workflow` | `setup-workflow` |
+| Reset | Restore generic configuration. | `/tiki-taka:reset-workflow` | `reset-workflow` |
+| PRD analysis | Analyze a PRD against production code and optionally slice rollout phases. | `/tiki-taka:prd-analyze` | `prd-analyze` |
+| Development | Plan and execute ready independent tasks through the execute→review loop. | `/tiki-taka:dev-workflow` | `dev-workflow` |
+| Economy mode | Run the execution phase sequentially with the same review and safety gates. | `/tiki-taka:economy-mode` | `economy-mode` |
+| Bug workflow | Investigate root cause, fix through reviewed lanes, and report incidents when needed. | `/tiki-taka:bug-workflow` | `bug-workflow` |
+| EM review | Audit PRD compliance and offer to trigger execution-only work. | `/tiki-taka:em-review` | `em-review` |
+
+### Claude Code
+
+Run the slash command from the table in a Claude Code session.
+
+### Codex
+
+Invoke the corresponding plugin skill by name in a Codex session. The adapters share the same
+workflow definitions, so stages do not have two independent copies that can drift.
 
 `dev-workflow` and `bug-workflow` read `context/team-context.md` (Local Repo Roots, Squad Members,
 Repository Mapping, Feature Scope) at the start; each runtime adapter resolves that path to its own
@@ -69,30 +75,33 @@ Both workflows follow the same git and tracker discipline so you always know wha
 
 ## Setup — configure your team first
 
-Run `/tiki-taka:setup-workflow` and answer the prompts; it writes your answers to
-`context/team-context.md` and `context/tool-providers.md` so the workflow agents use your setup
-instead of asking. Alternatively, edit `context/team-context.md` by hand — it ships as a **template
-with placeholders**: the absolute paths where your repos live, feature scope, members, and repository
-mapping. The workflow commands refuse to run while the placeholders are still in place. Nothing in the
-plugin is hardcoded to a specific team. Undo with `/tiki-taka:reset-workflow`.
+Run the setup entry point for your runtime and answer the prompts; it writes your answers to the
+runtime's configuration files so the workflow agents use your setup instead of asking. Alternatively,
+edit the templates by hand — they ship with placeholders for repo paths, feature scope, members, and
+repository mapping. The workflow refuses to run while the placeholders are still in place. Nothing in
+the plugin is hardcoded to a specific team. Undo with the reset entry point for your runtime.
 
 Optional integrations: agents can read/write PRDs, TRDs, tasks, and incident reports through
 whatever issue-tracker or wiki tool is connected in your session (an MCP server, CLI, or API for
 JIRA/Linear/GitHub Issues/Confluence/Notion, etc.). If none is connected, the agents fall back to
 local `.md` files and tell you — the workflow still runs.
 
-## Claude Code installation
+## Installation
 
-**Install from Bitbucket (recommended):** register the repo as a marketplace by its Git URL, then
-install. The marketplace name is `tiki-taka-workflow` (the `name` in `.claude-plugin/marketplace.json`).
+The examples below install from GitHub. The Bitbucket mirror remains available if your team already
+uses it.
+
+### Claude Code
+
+Register the GitHub repository as a marketplace, then install the plugin. The marketplace name is
+`tiki-taka-workflow` (the `name` in `.claude-plugin/marketplace.json`).
 
 ```bash
-claude plugin marketplace add git@bitbucket.org:tunaiku/tiki-taka-workflow.git
+claude plugin marketplace add git@github.com:cakahlul/tiki-taka-workflow.git
 claude plugin install tiki-taka@tiki-taka-workflow
 ```
 
-SSH URL needs your Bitbucket SSH key set up; HTTPS works too
-(`https://bitbucket.org/tunaiku/tiki-taka-workflow.git`, prompts for an app password on a private repo).
+HTTPS works too: `https://github.com/cakahlul/tiki-taka-workflow.git`.
 Pull later updates with `claude plugin marketplace update tiki-taka-workflow`.
 
 > `setup-workflow` writes `context/team-context.md` + `tool-providers.md` into the installed copy;
@@ -100,13 +109,13 @@ Pull later updates with `claude plugin marketplace update tiki-taka-workflow`.
 
 After install, run `/tiki-taka:setup-workflow` to configure the plugin for your team.
 
-## Codex installation
+### Codex
 
-Register this repository as a Codex marketplace, install the plugin, then start a new Codex thread so
-the newly installed skills are discovered:
+Register the GitHub repository as a Codex marketplace, install the plugin, then start a new Codex
+thread so the newly installed skills are discovered:
 
 ```bash
-codex plugin marketplace add git@bitbucket.org:tunaiku/tiki-taka-workflow.git
+codex plugin marketplace add git@github.com:cakahlul/tiki-taka-workflow.git
 codex plugin add tiki-taka@tiki-taka-workflow
 ```
 
@@ -117,19 +126,19 @@ codex plugin marketplace add /absolute/path/to/tiki-taka-workflow
 codex plugin add tiki-taka@tiki-taka-workflow
 ```
 
-In the new thread, say “Set up Tiki-Taka for this workspace.” Codex stores mutable configuration in
-the target workspace under `.tiki-taka/config/`; it does not edit the installed plugin cache. Scratch
-planning artifacts live under `.tiki-taka/scratch/`. Keep `.tiki-taka/` out of source control when it
-contains private team configuration or temporary planning data.
+In the new thread, invoke `setup-workflow` or say “Set up Tiki-Taka for this workspace.” Codex stores
+mutable configuration in the target workspace under `.tiki-taka/config/`; it does not edit the
+installed plugin cache. Scratch planning artifacts live under `.tiki-taka/scratch/`. Keep `.tiki-taka/`
+out of source control when it contains private team configuration or temporary planning data.
 
 Claude Code and Codex configuration are separate. Claude Code uses the installed plugin's
 `context/team-context.md` and `context/tool-providers.md`; Codex uses workspace
 `.tiki-taka/config/team-context.md` and `.tiki-taka/config/tool-providers.md`. Run setup once per
 runtime. Codex never uses Claude's mutable provider files.
 
-The Codex compatibility layer maps Claude-specific tool names to the tools and connectors available
-in the current Codex session. Tracker/wiki integrations remain optional and retain the local Markdown
-fallback when the configured provider is unavailable.
+The runtime compatibility layer maps provider capabilities to the tools and connectors available in
+the current session. Tracker/wiki integrations remain optional and retain the local Markdown fallback
+when the configured provider is unavailable.
 
 ## Runtime-aware model routing
 
@@ -179,8 +188,8 @@ Bundled support skills and adapters (missing external references are not require
 
 ## Notes
 
-- **Explicit orchestration**: Claude Code enters through `/tiki-taka:*`; Codex enters through the seven
-  workflow skills. Support skills may still be model-invoked when their descriptions match.
+- **Explicit orchestration**: use the native entry point for your runtime — Claude Code slash commands
+  or Codex workflow skills. Support skills may still be model-invoked when their descriptions match.
 - Team data is not hardcoded — each runtime fills its own `team-context.md` during Setup.
 - **Minimality is built in**: agents lean on the bundled `minimal-solution-check` skill, so no external
   plugin is required. If you also install a dedicated laziness plugin like `ponytail`, it layers on top and
