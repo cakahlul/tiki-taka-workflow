@@ -42,6 +42,7 @@ digest and record `resume unavailable`; do not imply context was retained.
 | `technical-writer` | `economy` | Never by default; use `balanced` only for conflicting source artifacts |
 | `incident-reporter` | `economy` | The report requires unresolved technical reconstruction |
 | `prd-analyst` | `balanced` | Contradictory requirements with material product or data risk |
+| `prd-reviewer` | `balanced` | Contradictory requirements with material product, data, or cross-service risk |
 | `prd-slicer` | `balanced` | Cross-system dependency ordering remains ambiguous |
 | `trd-writer` | `balanced` | Security, migration, distributed consistency, or irreversible design |
 | `task-breaker` | `balanced` | Cross-repo execution or unclear critical dependency graph |

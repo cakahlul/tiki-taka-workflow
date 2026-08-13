@@ -57,7 +57,7 @@ grep -q 'Local code-only workers' "$RUNTIME"
 
 test "$(grep -l 'maxTurns: 40' "$PLUGIN"/agents/*-executor.md | wc -l | tr -d ' ')" -eq 3
 test "$(grep -l 'maxTurns: 24' "$PLUGIN"/agents/*-reviewer.md | wc -l | tr -d ' ')" -eq 3
-for f in em prd-analyst bug-analyst; do grep -q 'maxTurns: 30' "$PLUGIN/agents/$f.md"; done
+for f in em prd-analyst prd-reviewer bug-analyst; do grep -q 'maxTurns: 30' "$PLUGIN/agents/$f.md"; done
 for f in project-scout prd-slicer trd-writer task-breaker technical-writer incident-reporter; do
   grep -q 'maxTurns: 20' "$PLUGIN/agents/$f.md"
 done

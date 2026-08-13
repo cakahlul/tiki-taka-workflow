@@ -34,7 +34,7 @@ The same workflows are available in both runtimes. Use the entry point for the t
 | --- | --- | --- | --- |
 | Setup | Configure team context, providers, repositories, and design tools. | `/tiki-taka:setup-workflow` | `setup-workflow` |
 | Reset | Restore generic configuration. | `/tiki-taka:reset-workflow` | `reset-workflow` |
-| PRD analysis | Analyze a PRD against production code and optionally slice rollout phases. | `/tiki-taka:prd-analyze` | `prd-analyze` |
+| PRD review | Critique and score a complete PRD against its attachments, references, and production code. | `/tiki-taka:prd-review` | `prd-review` |
 | Development | Plan and execute ready independent tasks through the execute→review loop. | `/tiki-taka:dev-workflow` | `dev-workflow` |
 | Economy mode | Run the execution phase sequentially with the same review and safety gates. | `/tiki-taka:economy-mode` | `economy-mode` |
 | Bug workflow | Investigate root cause, fix through reviewed lanes, and report incidents when needed. | `/tiki-taka:bug-workflow` | `bug-workflow` |
@@ -167,12 +167,13 @@ default; economy changes scheduling only. The ledger always records observed sch
 fields are measured only when current-tree telemetry is exposed, otherwise they remain null for post-run
 aggregation. Public-rate estimates stay explicitly labeled.
 
-## 15 Subagents
+## 16 Subagents
 
 **Planning:** prd-analyst, prd-slicer, project-scout, trd-writer, task-breaker, technical-writer
 **Execution:** be-executor, be-reviewer, fe-web-executor, fe-web-reviewer, fe-mobile-executor,
 fe-mobile-reviewer
 **Bug:** bug-analyst, incident-reporter (repo/stack resolution reuses project-scout)
+**PRD review:** prd-reviewer (paired with project-scout by `/tiki-taka:prd-review`)
 **Audit:** em in review mode (PRD-compliance auditor, driven by `/tiki-taka:em-review`)
 
 ## Bundled skills (18 support skills + 7 Codex workflow adapters)
